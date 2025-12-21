@@ -3,7 +3,21 @@
 		"supabase": {
 			"type": "http",
 			"url": "https://mcp.supabase.com/mcp?project_ref=rlkuzrmuepqavhcfkcrh"
+		},
+		"my-mcp-server-6c8ba498": {
+			"url": "https://mcp.render.com/mcp",
+			"type": "http",
+			"headers": {
+				"Authorization": "Bearer ${input:render_api_key}"
+			}
 		}
 	},
-	"inputs": []
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "render_api_key",
+			"description": "Render API key (Bearer token)",
+			"password": true
+		}
+	]
 }

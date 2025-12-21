@@ -3,6 +3,7 @@
 
 # editor
 .vscode/
+# .vscode/mcp.json
 
 # env
 .env
@@ -23,3 +24,5 @@ node_modules/
 /backend/storage/framework/sessions/
 /backend/storage/framework/views/
 /backend/bootstrap/cache/
+.vscode/mcp.json
+.vscode/mcp.json
