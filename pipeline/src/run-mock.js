@@ -4,8 +4,7 @@ import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './servi
 function requireEnv(name) {
 	const value = process.env[name];
 	if (!value) {
-		console.warn(`Warning: Missing env var: ${name}`);
-		return null;
+		throw new Error(`Missing required env var: ${name}`);
 	}
 	return value;
 }
@@ -41,11 +40,7 @@ ${improvedHtml}
 }
 
 async function main() {
-	const apiBaseUrl = requireEnv('API_BASE_URL');
-	if (!apiBaseUrl) {
-		console.error('API_BASE_URL is required');
-		process.exit(1);
-	}
+	requireEnv('API_BASE_URL');
 
 	console.log('Running mock pipeline (for testing without external APIs)...\n');
 
