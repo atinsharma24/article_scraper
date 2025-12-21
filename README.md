@@ -1,90 +1,237 @@
 # BeyondChats TPM Assignment (Monorepo)
 
-## Stack (recommended)
-- DB: Supabase Postgres
-- Backend API: Laravel (Render Web Service)
-- Pipeline: Node.js (GitHub Actions scheduled workflow)
-- Frontend: React (Vite) (Vercel)
-- SERP: SerpAPI
-- LLM: Provider via API key (OpenAI/Anthropic/etc.)
+A full-stack content pipeline application that scrapes original articles, rewrites them using AI, and displays both versions side-by-side.
 
-## Repo structure
-- `backend/`  - Laravel API (CRUD + scraper command)
-- `pipeline/` - Node pipeline (SERP + scrape + LLM + publish)
-- `frontend/` - React UI
-- `docs/`     - diagrams and notes
+![Application Screenshot](https://github.com/user-attachments/assets/3d458a3e-69b0-4eb0-9734-aa35b0987fee)
 
-## Diagrams
-- Architecture: `docs/architecture.md`
-- Data flow: `docs/data-flow.md`
-- ERD: `docs/erd.md`
+## Stack
+- **Database**: Supabase Postgres (production) / SQLite (local development)
+- **Backend API**: Laravel 12 (PHP 8.3+)
+- **Pipeline**: Node.js scripts (SERP + scrape + LLM + publish)
+- **Frontend**: React 19 + Vite
+- **Deployment**: Render (backend), Vercel (frontend), GitHub Actions (pipeline)
+- **External APIs**: SerpAPI (search), OpenAI (LLM rewriting)
 
-## Local setup (high-level)
-### 1) Database (Supabase)
-- Create a Supabase project.
-- Get connection details (host/port/db/user/password).
-- Ensure network access allows your app to connect (Supabase “network restrictions” if enabled).
+## Repository Structure
+```
+.
+├── backend/          Laravel API (CRUD + database)
+├── pipeline/         Node.js scripts (seeding, pipeline)
+├── frontend/         React UI (Vite)
+├── docs/            Architecture diagrams and notes
+└── .github/         GitHub Actions workflows
+```
 
-### 2) Backend (Laravel)
-- Copy env: `cp backend/.env.example backend/.env`
-- Set DB values in `backend/.env`:
-	- `DB_HOST=db.rlkuzrmuepqavhcfkcrh.supabase.co`
-	- `DB_PORT=5432`
-	- `DB_DATABASE=postgres`
-	- `DB_USERNAME=postgres`
-	- `DB_PASSWORD=...` (do not commit)
-	- `DB_SSLMODE=require`
-- Run migrations (requires correct DB password): `cd backend && php artisan migrate`
-- Scrape oldest 5: `cd backend && php artisan articles:scrape-oldest --count=5`
-- Run locally: `cd backend && php artisan serve`
+## Documentation
+- **Architecture**: [`docs/architecture.md`](docs/architecture.md)
+- **Data Flow**: [`docs/data-flow.md`](docs/data-flow.md)
+- **Entity Relationship**: [`docs/erd.md`](docs/erd.md)
+- **Deployment**: [`docs/render-deploy.md`](docs/render-deploy.md)
 
-### 3) Pipeline (Node)
-- Copy env: `cp pipeline/.env.example pipeline/.env`
-- Set:
-	- `API_BASE_URL=http://localhost:8000` (or your Render backend URL)
-	- `SERPAPI_API_KEY=...`
-	- `LLM_API_KEY=...`
-	- `LLM_MODEL=gpt-4o-mini` (optional)
-- Install + run: `cd pipeline && npm install && npm run run-once`
+---
 
-### Seeding originals without Render Shell (Free Plan)
+## Quick Start (Local Development)
 
-Render Free instances do not support opening a Shell, so you can't run `php artisan` commands on the hosted service.
+### Prerequisites
+- PHP 8.3+ with extensions: `pdo`, `pdo_sqlite`, `intl`, `mbstring`
+- Composer 2+
+- Node.js 20+
+- npm
 
-Use the pipeline seeder to scrape BeyondChats and POST the results into your deployed backend:
+### 1. Backend Setup
 
-- `cd pipeline`
-- `npm ci`
-- `API_BASE_URL=https://content-pipeline-ruor.onrender.com npm run seed-originals -- --count 5`
+```bash
+cd backend
 
-Or run the GitHub Actions workflow `Seed Originals` (manual dispatch) after setting the repo secret `API_BASE_URL`.
+# Install dependencies
+composer install
 
-### 4) Frontend (React)
-- Copy env: `cp frontend/.env.example frontend/.env`
-- Set: `VITE_API_BASE_URL=http://localhost:8000`
-- Install + run: `cd frontend && npm install && npm run dev`
+# Create environment file
+cp .env.example .env
 
-## Deploy
+# Generate application key
+php artisan key:generate
+
+# Create SQLite database for local development
+mkdir -p database
+touch database/database.sqlite
+
+# Run migrations
+php artisan migrate
+
+# Start development server
+php artisan serve
+# Server runs at http://localhost:8000
+```
+
+### 2. Pipeline Setup
+
+```bash
+cd pipeline
+
+# Install dependencies
+npm ci
+
+# Create environment file
+cp .env.example .env
+# Edit .env and set API_BASE_URL=http://localhost:8000
+
+# Seed sample articles (works offline)
+npm run seed-local
+
+# Run mock pipeline (works without external APIs)
+npm run run-mock
+```
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm ci
+
+# Create environment file
+cp .env.example .env
+# Edit .env and set VITE_API_BASE_URL=http://localhost:8000
+
+# Start development server
+npm run dev
+# Frontend runs at http://localhost:5173
+```
+
+### 4. Verify Everything Works
+
+1. Open http://localhost:5173 in your browser
+2. You should see 3 original articles in the sidebar
+3. Click on any article to see the original and updated versions side-by-side
+4. The updated version includes references at the bottom
+
+---
+
+## Pipeline Scripts
+
+### Local Testing (No External APIs Required)
+
+The repository includes mock scripts for testing without external API access:
+
+- **`npm run seed-local`**: Seeds sample articles into the database
+- **`npm run run-mock`**: Runs a mock pipeline that creates updated versions
+
+### Production Scripts (Requires External APIs)
+
+These scripts require SERPAPI_API_KEY and LLM_API_KEY in your `.env` file:
+
+- **`npm run seed-originals`**: Scrapes BeyondChats.com and seeds real articles
+- **`npm run run-once`**: Runs the full pipeline (SERP + scrape + LLM + publish)
+
+---
+
+## Production Deployment
+
+### Database (Supabase)
+
+1. Create a Supabase project at https://supabase.com
+2. Get connection details (host, port, database, username, password)
+3. Configure network access if needed
+
 ### Backend (Render)
-- Use the Render Blueprint in `render.yaml` to deploy only the backend (free plan).
-- Set backend env vars in Render (at minimum):
-	- `APP_ENV=production`
-	- `APP_DEBUG=false`
-	- `APP_KEY` (Laravel app key)
-	- `APP_URL` (Render URL)
-	- `DB_CONNECTION=pgsql` + Supabase `DB_*` vars + `DB_SSLMODE=require`
-	- `FRONTEND_URL=https://<your-vercel-app>.vercel.app`
 
-### Pipeline (GitHub Actions)
-- The scheduled workflow is in `.github/workflows/pipeline.yml`.
-- In GitHub repo settings, add Actions secrets:
-	- `API_BASE_URL` = your Render backend base URL (must serve `/api/articles/...`)
-	- `SERPAPI_API_KEY`
-	- `LLM_API_KEY`
-	- `LLM_MODEL` (optional)
-	- `MAX_COMPETITOR_CHARS` (optional)
-- You can trigger it manually from GitHub Actions (Workflow dispatch).
+1. **Deploy using Render Blueprint**:
+   - The `render.yaml` file configures automatic deployment
+   - Connect your GitHub repo to Render
+   - Render will automatically deploy on push to main
+
+2. **Set Environment Variables in Render Dashboard**:
+   ```
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_KEY=base64:... (generate with: php artisan key:generate --show)
+   APP_URL=https://your-app.onrender.com
+   
+   DB_CONNECTION=pgsql
+   DB_HOST=db.rlkuzrmuepqavhcfkcrh.supabase.co
+   DB_PORT=5432
+   DB_DATABASE=postgres
+   DB_USERNAME=postgres
+   DB_PASSWORD=your_supabase_password
+   DB_SSLMODE=require
+   
+   FRONTEND_URL=https://your-vercel-app.vercel.app
+   ```
+
+3. **Migrations run automatically** on each deployment (see `render-start.sh`)
 
 ### Frontend (Vercel)
-- Deploy `frontend/`.
-- Set `VITE_API_BASE_URL` to your Render backend URL.
+
+1. Deploy the `frontend/` directory to Vercel
+2. Set environment variable:
+   ```
+   VITE_API_BASE_URL=https://your-app.onrender.com
+   ```
+
+### Pipeline (GitHub Actions)
+
+The pipeline runs automatically every 6 hours, or you can trigger it manually.
+
+1. **Set GitHub Actions Secrets**:
+   - Go to: Repository Settings → Secrets and variables → Actions
+   - Add the following secrets:
+     ```
+     API_BASE_URL=https://your-app.onrender.com
+     SERPAPI_API_KEY=your_serpapi_key
+     LLM_API_KEY=your_openai_key
+     LLM_MODEL=gpt-4o-mini (optional)
+     MAX_COMPETITOR_CHARS=20000 (optional)
+     ```
+
+2. **Workflows**:
+   - **Content Pipeline** (`.github/workflows/pipeline.yml`): Runs every 6 hours
+   - **Seed Originals** (`.github/workflows/seed-originals.yml`): Manual trigger to seed articles
+
+3. **Manual Trigger**:
+   - Go to Actions tab → Select workflow → Run workflow
+
+---
+
+## API Endpoints
+
+### Articles API
+
+- `GET /api/articles` - List all articles
+  - Query params: `type` (original|updated), `parent_id`, `per_page` (max 100)
+- `GET /api/articles/{id}` - Get single article with updates
+- `POST /api/articles` - Create new article
+- `PUT /api/articles/{id}` - Update article
+- `DELETE /api/articles/{id}` - Delete article
+- `GET /api/articles/latest-original-needing-update` - Get oldest original without updates
+
+---
+
+## Troubleshooting
+
+### Backend won't start
+- Ensure `bootstrap/cache` directory exists and is writable
+- Run `composer install` to install dependencies
+- Check `.env` file has correct database settings
+
+### Pipeline fails with "fetch failed"
+- This is expected if running in restricted environments
+- Use `npm run seed-local` and `npm run run-mock` for testing
+- For production, ensure network access to external APIs
+
+### Frontend shows "No articles"
+- Ensure backend is running
+- Check `VITE_API_BASE_URL` in frontend `.env`
+- Run `npm run seed-local` in pipeline to add sample data
+
+### Render deployment fails
+- Check that `bootstrap/cache` directory exists in repo
+- Verify environment variables are set correctly
+- Check Render logs for specific error messages
+
+---
+
+## License
+
+This project is for the BeyondChats TPM assignment.

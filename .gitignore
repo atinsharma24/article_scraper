@@ -3,11 +3,11 @@
 
 # editor
 .vscode/
-# .vscode/mcp.json
 
 # env
 .env
 .env.*
+!.env.example
 
 # node
 node_modules/
@@ -24,5 +24,10 @@ node_modules/
 /backend/storage/framework/sessions/
 /backend/storage/framework/views/
 /backend/bootstrap/cache/
-.vscode/mcp.json
-.vscode/mcp.json
+/backend/database/database.sqlite
+/backend/database/database.sqlite-*
+
+# temporary and backup files
+*_OLD.*
+*_NEW.*
+README_OLD.md
