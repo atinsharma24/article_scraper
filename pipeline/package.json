@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "run-once": "node src/run-once.js"
+    "run-once": "node src/run-once.js",
+    "seed-originals": "node src/seed-originals.js"
   },
   "dependencies": {
     "@extractus/article-extractor": "^8.0.4",

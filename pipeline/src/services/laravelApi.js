@@ -74,3 +74,10 @@ export async function publishUpdatedArticle(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function publishOriginalArticle(payload) {
+  return requestJson('/api/articles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

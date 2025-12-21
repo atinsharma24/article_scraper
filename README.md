@@ -47,6 +47,18 @@
 	- `LLM_MODEL=gpt-4o-mini` (optional)
 - Install + run: `cd pipeline && npm install && npm run run-once`
 
+### Seeding originals without Render Shell (Free Plan)
+
+Render Free instances do not support opening a Shell, so you can't run `php artisan` commands on the hosted service.
+
+Use the pipeline seeder to scrape BeyondChats and POST the results into your deployed backend:
+
+- `cd pipeline`
+- `npm ci`
+- `API_BASE_URL=https://content-pipeline-ruor.onrender.com npm run seed-originals -- --count 5`
+
+Or run the GitHub Actions workflow `Seed Originals` (manual dispatch) after setting the repo secret `API_BASE_URL`.
+
 ### 4) Frontend (React)
 - Copy env: `cp frontend/.env.example frontend/.env`
 - Set: `VITE_API_BASE_URL=http://localhost:8000`

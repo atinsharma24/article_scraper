@@ -1,0 +1,33 @@
+name: Seed Originals
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Number of original BeyondChats posts to ingest"
+        required: false
+        default: "5"
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pipeline/package-lock.json
+
+      - name: Install
+        working-directory: pipeline
+        run: npm ci
+
+      - name: Seed originals into backend
+        working-directory: pipeline
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          SEED_COUNT: ${{ inputs.count }}
+        run: npm run seed-originals
