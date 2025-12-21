@@ -1,0 +1,22 @@
+# general
+.DS_Store
+
+# env
+.env
+.env.*
+
+# node
+node_modules/
+
+# build
+/dist/
+/build/
+
+# laravel
+/backend/vendor/
+/backend/storage/*.key
+/backend/storage/logs/
+/backend/storage/framework/cache/
+/backend/storage/framework/sessions/
+/backend/storage/framework/views/
+/backend/bootstrap/cache/

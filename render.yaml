@@ -1,0 +1,24 @@
+# Render Blueprint
+# This file defines:
+# - A Laravel web service (backend)
+# - A Node cron job (pipeline)
+#
+# Fill in env vars in Render dashboard or add `envVars` entries here.
+
+services:
+  - type: web
+    name: beyondchats-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    plan: free
+    autoDeploy: true
+
+  - type: cron
+    name: beyondchats-pipeline
+    env: docker
+    rootDir: pipeline
+    dockerfilePath: Dockerfile
+    schedule: "0 */6 * * *" # every 6 hours
+    plan: free
+    autoDeploy: true

@@ -1,0 +1,13 @@
+{
+  "name": "beyondchats-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run-once": "node src/run-once.js"
+  },
+  "dependencies": {
+    "@extractus/article-extractor": "^8.0.4",
+    "dotenv": "^16.4.5",
+    "html-to-text": "^9.0.5"
+  }
+}
