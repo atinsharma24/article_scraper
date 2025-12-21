@@ -3,7 +3,7 @@
 ## Stack (recommended)
 - DB: Supabase Postgres
 - Backend API: Laravel (Render Web Service)
-- Pipeline: Node.js (Render Cron Job)
+- Pipeline: Node.js (GitHub Actions scheduled workflow)
 - Frontend: React (Vite) (Vercel)
 - SERP: SerpAPI
 - LLM: Provider via API key (OpenAI/Anthropic/etc.)
@@ -53,21 +53,25 @@
 - Install + run: `cd frontend && npm install && npm run dev`
 
 ## Deploy
-### Backend + Pipeline (Render)
-- Use the Render Blueprint in `render.yaml`.
-- Create two services from the same repo:
-	- Web service: `backend/` (Docker)
-	- Cron job: `pipeline/` (Docker)
+### Backend (Render)
+- Use the Render Blueprint in `render.yaml` to deploy only the backend (free plan).
 - Set backend env vars in Render (at minimum):
+	- `APP_ENV=production`
+	- `APP_DEBUG=false`
 	- `APP_KEY` (Laravel app key)
 	- `APP_URL` (Render URL)
 	- `DB_CONNECTION=pgsql` + Supabase `DB_*` vars + `DB_SSLMODE=require`
 	- `FRONTEND_URL=https://<your-vercel-app>.vercel.app`
-- Set pipeline env vars in Render:
-	- `API_BASE_URL=https://<your-render-backend>`
+
+### Pipeline (GitHub Actions)
+- The scheduled workflow is in `.github/workflows/pipeline.yml`.
+- In GitHub repo settings, add Actions secrets:
+	- `API_BASE_URL` = your Render backend base URL (must serve `/api/articles/...`)
 	- `SERPAPI_API_KEY`
 	- `LLM_API_KEY`
 	- `LLM_MODEL` (optional)
+	- `MAX_COMPETITOR_CHARS` (optional)
+- You can trigger it manually from GitHub Actions (Workflow dispatch).
 
 ### Frontend (Vercel)
 - Deploy `frontend/`.

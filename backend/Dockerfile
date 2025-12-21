@@ -11,10 +11,11 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-
 COPY . .
+
+# Install PHP dependencies. Copying the full app before install ensures `artisan` exists
+# when Composer runs Laravel's post-install scripts.
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 EXPOSE 10000
 

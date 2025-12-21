@@ -8,17 +8,8 @@
 services:
   - type: web
     name: beyondchats-backend
-    env: docker
-    rootDir: backend
-    dockerfilePath: Dockerfile
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     plan: free
-    autoDeploy: true
-
-  - type: cron
-    name: beyondchats-pipeline
-    env: docker
-    rootDir: pipeline
-    dockerfilePath: Dockerfile
-    schedule: "0 */6 * * *" # every 6 hours
-    plan: free
-    autoDeploy: true
+    autoDeployTrigger: commit
