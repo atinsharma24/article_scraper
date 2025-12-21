@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "run-once": "node src/run-once.js",
-    "seed-originals": "node src/seed-originals.js"
+    "seed-originals": "node src/seed-originals.js",
+    "seed-local": "node src/seed-local.js",
+    "run-mock": "node src/run-mock.js"
   },
   "dependencies": {
     "@extractus/article-extractor": "^8.0.4",
