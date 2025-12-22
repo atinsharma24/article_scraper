@@ -200,7 +200,7 @@ The pipeline runs automatically every 6 hours, or you can trigger it manually.
    LLM_API_KEY=your_llm_key
    # Model is optional; defaults depend on provider:
    # - openai: gpt-4o-mini
-   # - gemini: gemini-1.5-flash
+   # - gemini: gemini-2.5-flash
    LLM_MODEL=gpt-4o-mini (optional)
      MAX_COMPETITOR_CHARS=20000 (optional)
      ```

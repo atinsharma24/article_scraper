@@ -66,9 +66,13 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
 async function rewriteWithGemini({ apiKey, model, system, user }) {
   // Google AI Studio (Generative Language) API.
   // Docs: https://ai.google.dev/
+  const normalizedModel = String(model || '').startsWith('models/')
+    ? String(model).slice('models/'.length)
+    : String(model || '');
+
   const prompt = `${system}\n\n${user}`;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-    model
+    normalizedModel
   )}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const response = await fetch(url, {
@@ -112,6 +116,13 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
       err.code = 'quota_exceeded';
     }
 
+    if (response.status === 404) {
+      err.message =
+        `Gemini model not found or not supported for generateContent: ${normalizedModel}. ` +
+        'Set LLM_MODEL to an available text model from Google AI Studio (e.g. gemini-2.5-flash or gemini-2.5-flash-lite), then rerun.';
+      err.code = err.code ?? 'NOT_FOUND';
+    }
+
     throw err;
   }
 
@@ -129,7 +140,7 @@ export async function rewriteWithLlm({ originalTitle, originalHtml, competitorA,
   const apiKey = requireEnv('LLM_API_KEY');
   const provider = getProvider();
   const model =
-    process.env.LLM_MODEL || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    process.env.LLM_MODEL || (provider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
 
   const system =
     'You are a careful editor. Rewrite the provided original blog article to be more structured and similar in style/format to the two competitor articles, without inventing facts. Output HTML only.';
