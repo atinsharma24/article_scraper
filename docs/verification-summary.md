@@ -1,5 +1,11 @@
 # End-to-End Verification Summary
 
+## Diagrams
+
+![Content Pipeline Workflow](../diagrams/Content%20Pipeline%20Workflow-2025-12-22-152324.svg)
+
+- PNG fallback: [../diagrams/Content Pipeline Workflow-2025-12-22-152315.png](../diagrams/Content%20Pipeline%20Workflow-2025-12-22-152315.png)
+
 This document confirms that the BeyondChats TPM Assignment has been built from scratch and verified to work end-to-end.
 
 ## Date: December 21, 2025

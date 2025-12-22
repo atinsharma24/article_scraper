@@ -1,5 +1,9 @@
 # Render deployment checklist
 
+Diagrams:
+
+- [../diagrams/Content Pipeline Workflow-2025-12-22-152324.svg](../diagrams/Content%20Pipeline%20Workflow-2025-12-22-152324.svg)
+
 ## Backend (Laravel web service)
 
 - Service type: Web Service

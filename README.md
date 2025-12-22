@@ -18,7 +18,8 @@ A full-stack content pipeline application that scrapes original articles, rewrit
 ├── backend/          Laravel API (CRUD + database)
 ├── pipeline/         Node.js scripts (seeding, pipeline)
 ├── frontend/         React UI (Vite)
-├── docs/            Architecture diagrams and notes
+├── docs/            Documentation (architecture, data flow, deployment)
+├── diagrams/        Architecture/workflow diagrams (SVG/PNG)
 └── .github/         GitHub Actions workflows
 ```
 
@@ -27,6 +28,16 @@ A full-stack content pipeline application that scrapes original articles, rewrit
 - **Data Flow**: [`docs/data-flow.md`](docs/data-flow.md)
 - **Entity Relationship**: [`docs/erd.md`](docs/erd.md)
 - **Deployment**: [`docs/render-deploy.md`](docs/render-deploy.md)
+
+## Diagrams
+
+Primary diagram (SVG):
+
+![Content Pipeline Workflow](diagrams/Content%20Pipeline%20Workflow-2025-12-22-152324.svg)
+
+Fallback (PNG):
+
+- [diagrams/Content Pipeline Workflow-2025-12-22-152315.png](diagrams/Content%20Pipeline%20Workflow-2025-12-22-152315.png)
 
 ---
 
