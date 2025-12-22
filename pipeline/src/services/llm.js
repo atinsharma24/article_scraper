@@ -161,14 +161,40 @@ You must:
 
   const originalContent = htmlToText(originalHtml, { wordwrap: false });
 
+  const competitor1Url = competitorA?.url ? String(competitorA.url) : '';
+  const competitor2Url = competitorB?.url ? String(competitorB.url) : '';
+
+  const competitor1Block = [
+    competitor1Url ? `URL: ${competitor1Url}` : null,
+    competitorA?.title ? `TITLE: ${String(competitorA.title)}` : null,
+    competitorA?.text ? `CONTENT (EXCERPT):\n${String(competitorA.text).trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const competitor2Block = [
+    competitor2Url ? `URL: ${competitor2Url}` : null,
+    competitorB?.title ? `TITLE: ${String(competitorB.title)}` : null,
+    competitorB?.text ? `CONTENT (EXCERPT):\n${String(competitorB.text).trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   const user = `Original Article:
 <<<
 ${originalContent}
 >>>
 
 Reference Articles (quality benchmark only):
-1. ${competitorA.url}
-2. ${competitorB.url}
+1. ${competitor1Url}
+2. ${competitor2Url}
+
+Scraped Reference Content (for structure/coverage guidance only; do NOT copy wording):
+--- Reference 1 ---
+${competitor1Block || '(not available)'}
+
+--- Reference 2 ---
+${competitor2Block || '(not available)'}
 
 Task:
 Rewrite the original article to be clearer and more professional,

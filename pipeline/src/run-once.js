@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './services/laravelApi.js';
 import { googleTopCompetitors } from './services/serpapi.js';
+import { extractMainArticle } from './services/scrape.js';
 import { rewriteWithLlm } from './services/llm.js';
 
 function requireEnv(name) {
@@ -19,12 +20,58 @@ function parseMaxUpdatesPerRun() {
 	return 1;
 }
 
+function parseMaxCompetitorChars() {
+	const raw = String(process.env.MAX_COMPETITOR_CHARS ?? '12000').trim();
+	const n = Number(raw);
+	if (Number.isFinite(n) && n > 100) return Math.floor(n);
+	return 12000;
+}
+
+async function pickAndScrapeTwoCompetitors(query) {
+	// Pull more than 2 candidates, then scrape until we successfully extract 2.
+	const candidates = await googleTopCompetitors(query, { limit: 10 });
+	if (candidates.length < 2) {
+		throw new Error(`Expected at least 2 competitor URLs, got ${candidates.length}`);
+	}
+
+	const chosen = [];
+	for (const c of candidates) {
+		if (chosen.length >= 2) break;
+		try {
+			const extracted = await extractMainArticle(c.url);
+			const text = (extracted.text || '').trim();
+			if (!text) {
+				throw new Error('Empty extracted text');
+			}
+			chosen.push({
+				url: c.url,
+				serpTitle: c.title ?? null,
+				extractedTitle: extracted.title ?? null,
+				text,
+			});
+		} catch (err) {
+			const msg = String(err?.message ?? err);
+			console.log(`Skip competitor (scrape failed): ${c.url} :: ${msg}`);
+			continue;
+		}
+	}
+
+	if (chosen.length < 2) {
+		throw new Error(
+			`Could not scrape 2 competitor articles (scraped=${chosen.length}). Try again later or reduce blocked domains by adjusting SerpAPI results.`
+		);
+	}
+
+	return chosen;
+}
+
 async function main() {
 	requireEnv('API_BASE_URL');
 	requireEnv('SERPAPI_API_KEY');
 	requireEnv('LLM_API_KEY');
 	// Optional: LLM_PROVIDER=openai|gemini (default gemini)
 	const maxUpdates = parseMaxUpdatesPerRun();
+	const maxChars = parseMaxCompetitorChars();
 	console.log(`MAX_UPDATES_PER_RUN=${maxUpdates}`);
 
 	let ok = 0;
@@ -42,23 +89,27 @@ async function main() {
 		console.log(`Selected original: id=${original.id} title=${original.title}`);
 
 		try {
-			const competitors = await googleTopCompetitors(original.title);
-			if (competitors.length < 2) {
-				throw new Error(`Expected 2 competitor URLs, got ${competitors.length}`);
-			}
-
+			const competitors = await pickAndScrapeTwoCompetitors(original.title);
 			console.log('Competitor URLs:', competitors.map((c) => c.url).join(' | '));
 
 			const rewritten = await rewriteWithLlm({
 				originalTitle: original.title,
 				originalHtml: original.content,
-				competitorA: { url: competitors[0].url },
-				competitorB: { url: competitors[1].url },
+				competitorA: {
+					url: competitors[0].url,
+					title: competitors[0].extractedTitle ?? competitors[0].serpTitle ?? null,
+					text: competitors[0].text.slice(0, maxChars),
+				},
+				competitorB: {
+					url: competitors[1].url,
+					title: competitors[1].extractedTitle ?? competitors[1].serpTitle ?? null,
+					text: competitors[1].text.slice(0, maxChars),
+				},
 			});
 
 			const references = [
-				{ url: competitors[0].url, title: competitors[0].title ?? null },
-				{ url: competitors[1].url, title: competitors[1].title ?? null },
+				{ url: competitors[0].url, title: competitors[0].serpTitle ?? competitors[0].extractedTitle ?? null },
+				{ url: competitors[1].url, title: competitors[1].serpTitle ?? competitors[1].extractedTitle ?? null },
 			];
 
 			// Ensure citations exist at the bottom of the generated article.
