@@ -9,6 +9,9 @@
 .env.*
 !.env.example
 
+# render env exports (may contain secrets)
+/backend/content-pipeline.env
+
 # node
 node_modules/
 

@@ -132,8 +132,8 @@ These scripts require SERPAPI_API_KEY and LLM_API_KEY in your `.env` file:
 ### Database (Supabase)
 
 1. Create a Supabase project at https://supabase.com
-2. Get connection details (host, port, database, username, password)
-3. Configure network access if needed
+2. In Supabase Dashboard → **Connect**, use **Connection pooling (Session Pooler)** if deploying to an IPv4-only platform (e.g., Render Free)
+3. Copy the pooler connection details (host, port, database, username, password) exactly as shown
 
 ### Backend (Render)
 
@@ -150,10 +150,12 @@ These scripts require SERPAPI_API_KEY and LLM_API_KEY in your `.env` file:
    APP_URL=https://your-app.onrender.com
    
    DB_CONNECTION=pgsql
-   DB_HOST=db.rlkuzrmuepqavhcfkcrh.supabase.co
-   DB_PORT=5432
+   # IMPORTANT: Don't use Supabase "Direct connection" (db.<project-ref>.supabase.co:5432)
+   # on IPv4-only hosts. Use Supabase "Connection pooling" (Session Pooler) instead.
+   DB_HOST=<pooler-host-from-supabase>
+   DB_PORT=<pooler-port-from-supabase>
    DB_DATABASE=postgres
-   DB_USERNAME=postgres
+   DB_USERNAME=<pooler-username-from-supabase>
    DB_PASSWORD=your_supabase_password
    DB_SSLMODE=require
    
@@ -198,6 +200,7 @@ The pipeline runs automatically every 6 hours, or you can trigger it manually.
 
 ### Articles API
 
+- `GET /api/health` - Health check (does not touch the database)
 - `GET /api/articles` - List all articles
   - Query params: `type` (original|updated), `parent_id`, `per_page` (max 100)
 - `GET /api/articles/{id}` - Get single article with updates
