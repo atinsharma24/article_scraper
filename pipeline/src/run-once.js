@@ -29,7 +29,7 @@ function parseMaxCompetitorChars() {
 
 async function pickAndScrapeTwoCompetitors(query) {
 	// Pull more than 2 candidates, then scrape until we successfully extract 2.
-	const candidates = await googleTopCompetitors(query, { limit: 10 });
+	const candidates = await googleTopCompetitors(query, { limit: 20 });
 	if (candidates.length < 2) {
 		throw new Error(`Expected at least 2 competitor URLs, got ${candidates.length}`);
 	}
@@ -43,6 +43,7 @@ async function pickAndScrapeTwoCompetitors(query) {
 			if (!text) {
 				throw new Error('Empty extracted text');
 			}
+			console.log(`Picked competitor: ${c.url}`);
 			chosen.push({
 				url: c.url,
 				serpTitle: c.title ?? null,

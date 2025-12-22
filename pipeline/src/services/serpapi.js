@@ -5,6 +5,15 @@ function isDisallowedDomain(url) {
     const disallowedHosts = new Set([
       'beyondchats.com',
       'www.beyondchats.com',
+
+      // Often blocks scrapers / requires auth
+      'tmforum.org',
+      'www.tmforum.org',
+
+      // UGC / frequently blocks and/or noisy for "competitor article" use-case
+      'reddit.com',
+      'www.reddit.com',
+
       'linkedin.com',
       'www.linkedin.com',
       'facebook.com',
@@ -55,7 +64,11 @@ export async function googleTopCompetitors(query, { limit = 10 } = {}) {
   url.searchParams.set('engine', 'google');
   url.searchParams.set('q', query);
   url.searchParams.set('api_key', apiKey);
-  url.searchParams.set('num', String(Math.max(2, Math.min(10, Number(limit) || 10))));
+
+  const wanted = Math.max(2, Number(limit) || 10);
+  // Fetch more than we intend to keep so we can skip blocked/irrelevant domains.
+  const fetchNum = Math.max(10, Math.min(30, wanted));
+  url.searchParams.set('num', String(fetchNum));
 
   const res = await fetch(url.toString());
   if (!res.ok) {
@@ -73,7 +86,7 @@ export async function googleTopCompetitors(query, { limit = 10 } = {}) {
     if (!looksLikeArticle(link)) continue;
 
     picked.push({ url: link, title: r.title ?? null });
-    if (picked.length >= limit) break;
+    if (picked.length >= wanted) break;
   }
 
   return picked;
