@@ -3,6 +3,10 @@ name: Seed Originals
 on:
   workflow_dispatch:
     inputs:
+      api_base_url:
+        description: "Backend API base URL (defaults to Render)"
+        required: false
+        default: "https://content-pipeline-ruor.onrender.com"
       count:
         description: "Number of original BeyondChats posts to ingest"
         required: false
@@ -11,6 +15,7 @@ on:
 jobs:
   seed:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -25,9 +30,36 @@ jobs:
         working-directory: pipeline
         run: npm ci
 
+      - name: Resolve API base URL
+        id: api
+        shell: bash
+        run: |
+          set -euo pipefail
+          API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
+          API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
+          API_BASE_URL="$API_BASE_URL_INPUT"
+          if [ -z "$API_BASE_URL" ]; then
+            API_BASE_URL="$API_BASE_URL_SECRET"
+          fi
+          API_BASE_URL="${API_BASE_URL%/}"
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API base URL is empty. Set workflow input api_base_url or repo secret API_BASE_URL."
+            exit 1
+          fi
+          echo "API_BASE_URL=$API_BASE_URL" >> "$GITHUB_OUTPUT"
+          echo "Using API_BASE_URL=$API_BASE_URL"
+
+      - name: Wait for backend health
+        shell: bash
+        run: |
+          set -euo pipefail
+          API_BASE_URL='${{ steps.api.outputs.API_BASE_URL }}'
+          echo "Checking $API_BASE_URL/api/health"
+          curl -fsS --retry 6 --retry-all-errors --retry-delay 3 "$API_BASE_URL/api/health" | cat
+
       - name: Seed originals into backend
         working-directory: pipeline
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
           SEED_COUNT: ${{ inputs.count }}
         run: npm run seed-originals
