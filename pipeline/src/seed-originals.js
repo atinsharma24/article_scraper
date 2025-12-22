@@ -25,6 +25,11 @@ function parseCountFromArgs() {
 	return 5;
 }
 
+function parseResetFromEnv() {
+	const raw = String(process.env.RESET_SEED ?? 'false').trim().toLowerCase();
+	return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'y';
+}
+
 async function fetchHtml(url) {
 	const res = await fetch(url, {
 		headers: {
@@ -145,6 +150,69 @@ async function fetchExistingOriginalSourceUrls() {
 	return existing;
 }
 
+async function listArticlesByType(type) {
+	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
+
+	const results = [];
+	const perPage = 100;
+	const maxPages = 200;
+
+	let page = 1;
+	let lastPage = 1;
+
+	while (page <= lastPage && page <= maxPages) {
+		const res = await fetch(
+			`${base}/api/articles?type=${encodeURIComponent(type)}&per_page=${perPage}&page=${page}`,
+			{ headers: { Accept: 'application/json' } }
+		);
+		if (!res.ok) {
+			throw new Error(`Failed to list articles (type=${type}, page=${page}). HTTP ${res.status}`);
+		}
+
+		const json = await res.json();
+		const data = Array.isArray(json?.data) ? json.data : [];
+		for (const a of data) {
+			if (a?.id) results.push(a);
+		}
+
+		const lp = Number(json?.last_page ?? json?.meta?.last_page ?? 1);
+		lastPage = Number.isFinite(lp) && lp > 0 ? lp : lastPage;
+
+		if (data.length === 0 && page >= lastPage) break;
+		page += 1;
+	}
+
+	return results;
+}
+
+async function deleteArticleById(id) {
+	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
+	const res = await fetch(`${base}/api/articles/${id}`, {
+		method: 'DELETE',
+		headers: { Accept: 'application/json' },
+	});
+	// 204 expected. Treat 404 as already deleted.
+	if (res.status === 204 || res.status === 404) return;
+	const body = await res.text().catch(() => '');
+	throw new Error(`Failed to delete article id=${id}. HTTP ${res.status}: ${body}`);
+}
+
+async function resetAllArticles() {
+	console.log('RESET_SEED=true: deleting existing updated + original articles...');
+
+	const updated = await listArticlesByType('updated');
+	for (const a of updated) {
+		await deleteArticleById(a.id);
+	}
+	console.log(`Deleted updated: ${updated.length}`);
+
+	const originals = await listArticlesByType('original');
+	for (const a of originals) {
+		await deleteArticleById(a.id);
+	}
+	console.log(`Deleted originals: ${originals.length}`);
+}
+
 function slugFromUrl(url) {
 	try {
 		const u = new URL(url);
@@ -158,6 +226,11 @@ function slugFromUrl(url) {
 async function main() {
 	requireEnv('API_BASE_URL');
 	const count = Math.max(1, Math.min(20, parseCountFromArgs()));
+	const reset = parseResetFromEnv();
+
+	if (reset) {
+		await resetAllArticles();
+	}
 
 	const baseUrl = 'https://beyondchats.com/blogs/';
 	console.log(`Fetching listing: ${baseUrl}`);
@@ -175,7 +248,7 @@ async function main() {
 	}
 
 	console.log(`Found ${articleUrls.length} URLs. Seeding into backend...`);
-	const existing = await fetchExistingOriginalSourceUrls();
+	const existing = reset ? new Set() : await fetchExistingOriginalSourceUrls();
 
 	let ok = 0;
 	let failed = 0;

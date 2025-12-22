@@ -3,6 +3,10 @@ name: Seed Originals
 on:
   workflow_dispatch:
     inputs:
+      reset:
+        description: "Delete existing originals/updates before seeding (recommended to avoid old articles lingering)"
+        required: false
+        default: "true"
       api_base_url:
         description: "Backend API base URL (defaults to Render)"
         required: false
@@ -62,4 +66,5 @@ jobs:
         env:
           API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
           SEED_COUNT: ${{ inputs.count }}
+          RESET_SEED: ${{ inputs.reset }}
         run: npm run seed-originals
