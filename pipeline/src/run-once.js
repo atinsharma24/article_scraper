@@ -2,7 +2,6 @@ import 'dotenv/config';
 
 import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './services/laravelApi.js';
 import { googleTopCompetitors } from './services/serpapi.js';
-import { extractMainArticle } from './services/scrape.js';
 import { rewriteWithLlm } from './services/llm.js';
 
 function requireEnv(name) {
@@ -34,21 +33,16 @@ async function main() {
 
 	console.log('Competitor URLs:', competitors.map((c) => c.url).join(' | '));
 
-	const ref1 = await extractMainArticle(competitors[0].url);
-	const ref2 = await extractMainArticle(competitors[1].url);
-
-	const maxChars = Number(process.env.MAX_COMPETITOR_CHARS ?? '20000');
-
 	const rewritten = await rewriteWithLlm({
 		originalTitle: original.title,
 		originalHtml: original.content,
-		competitorA: { title: ref1.title, url: competitors[0].url, text: ref1.text.slice(0, maxChars) },
-		competitorB: { title: ref2.title, url: competitors[1].url, text: ref2.text.slice(0, maxChars) },
+		competitorA: { url: competitors[0].url },
+		competitorB: { url: competitors[1].url },
 	});
 
 	const references = [
-		{ url: competitors[0].url, title: competitors[0].title ?? ref1.title ?? null },
-		{ url: competitors[1].url, title: competitors[1].title ?? ref2.title ?? null },
+		{ url: competitors[0].url, title: competitors[0].title ?? null },
+		{ url: competitors[1].url, title: competitors[1].title ?? null },
 	];
 
 	// Ensure citations exist at the bottom of the generated article.
