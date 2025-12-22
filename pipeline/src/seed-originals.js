@@ -113,15 +113,36 @@ function isLikelyBlogPostUrl(url) {
 
 async function fetchExistingOriginalSourceUrls() {
 	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
-	const res = await fetch(`${base}/api/articles?type=original&per_page=100`, {
-		headers: { 'Content-Type': 'application/json' },
-	});
-	if (!res.ok) {
-		throw new Error(`Failed to list existing originals. HTTP ${res.status}`);
+
+	const existing = new Set();
+	const perPage = 100;
+	const maxPages = 200;
+
+	let page = 1;
+	let lastPage = 1;
+
+	while (page <= lastPage && page <= maxPages) {
+		const res = await fetch(`${base}/api/articles?type=original&per_page=${perPage}&page=${page}`, {
+			headers: { 'Accept': 'application/json' },
+		});
+		if (!res.ok) {
+			throw new Error(`Failed to list existing originals (page=${page}). HTTP ${res.status}`);
+		}
+
+		const json = await res.json();
+		const data = Array.isArray(json?.data) ? json.data : [];
+		for (const a of data) {
+			if (a?.source_url) existing.add(a.source_url);
+		}
+
+		const lp = Number(json?.last_page ?? json?.meta?.last_page ?? 1);
+		lastPage = Number.isFinite(lp) && lp > 0 ? lp : lastPage;
+
+		if (data.length === 0 && page >= lastPage) break;
+		page += 1;
 	}
-	const json = await res.json();
-	const data = Array.isArray(json?.data) ? json.data : [];
-	return new Set(data.map((a) => a?.source_url).filter(Boolean));
+
+	return existing;
 }
 
 function slugFromUrl(url) {
@@ -179,6 +200,12 @@ async function main() {
 			ok += 1;
 			console.log(`Seeded: id=${created.id} title=${created.title}`);
 		} catch (err) {
+			// If the backend says it's a conflict, treat it as a skip to keep runs idempotent.
+			if (err?.status === 409) {
+				console.log(`Skip (conflict/exists): ${url}`);
+				continue;
+			}
+
 			failed += 1;
 			console.error(`Failed: ${url}`);
 			console.error(err?.message ?? err);

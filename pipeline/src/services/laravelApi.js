@@ -46,6 +46,7 @@ async function requestJson(path, options = {}) {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       ...(options.headers ?? {}),
     },
     },
@@ -58,7 +59,11 @@ async function requestJson(path, options = {}) {
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    throw new Error(`HTTP ${response.status} for ${url}: ${body}`);
+    const err = new Error(`HTTP ${response.status} for ${url}: ${body}`);
+    err.status = response.status;
+    err.url = url;
+    err.body = body;
+    throw err;
   }
 
   return response.json();

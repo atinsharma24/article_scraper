@@ -6,10 +6,34 @@ use App\Http\Requests\StoreArticleRequest;
 use App\Http\Requests\UpdateArticleRequest;
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ArticleController extends Controller
 {
+    public function exists(Request $request)
+    {
+        $sourceUrl = $request->query('source_url');
+        if (!$sourceUrl) {
+            return response()->json([
+                'message' => 'source_url is required',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $article = Article::query()->where('source_url', $sourceUrl)->first();
+        if (!$article) {
+            return response()->json(['exists' => false]);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'id' => $article->id,
+            'type' => $article->type,
+            'parent_id' => $article->parent_id,
+        ]);
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -38,8 +62,24 @@ class ArticleController extends Controller
      */
     public function store(StoreArticleRequest $request)
     {
-        $article = Article::create($request->validated());
-        return response()->json($article, Response::HTTP_CREATED);
+        $validated = $request->validated();
+
+        try {
+            $article = Article::create($validated);
+            return response()->json($article, Response::HTTP_CREATED);
+        } catch (UniqueConstraintViolationException $e) {
+            $sourceUrl = $validated['source_url'] ?? null;
+            if ($sourceUrl) {
+                $existing = Article::query()->where('source_url', $sourceUrl)->first();
+
+                return response()->json([
+                    'message' => 'Article already exists',
+                    'article' => $existing,
+                ], Response::HTTP_CONFLICT);
+            }
+
+            throw $e;
+        }
     }
 
     /**
