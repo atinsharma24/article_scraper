@@ -4,6 +4,9 @@ function requireEnv(name) {
   return value;
 }
 
+import { htmlToText } from 'html-to-text';
+import { marked } from 'marked';
+
 function getProvider() {
   const raw = (process.env.LLM_PROVIDER || 'gemini').trim().toLowerCase();
   if (raw === 'openai' || raw === 'gemini') return raw;
@@ -54,13 +57,13 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
   }
 
   const data = await response.json();
-  const html = data?.choices?.[0]?.message?.content;
+  const markdown = data?.choices?.[0]?.message?.content;
 
-  if (!html || typeof html !== 'string') {
+  if (!markdown || typeof markdown !== 'string') {
     throw new Error('LLM returned empty content');
   }
 
-  return { title: null, html };
+  return { title: null, markdown };
 }
 
 async function rewriteWithGemini({ apiKey, model, system, user }) {
@@ -127,13 +130,16 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
   }
 
   const data = await response.json();
-  const html = data?.candidates?.[0]?.content?.parts?.map((p) => p?.text).filter(Boolean).join('');
+  const markdown = data?.candidates?.[0]?.content?.parts
+    ?.map((p) => p?.text)
+    .filter(Boolean)
+    .join('');
 
-  if (!html || typeof html !== 'string') {
+  if (!markdown || typeof markdown !== 'string') {
     throw new Error('LLM returned empty content');
   }
 
-  return { title: null, html };
+  return { title: null, markdown };
 }
 
 export async function rewriteWithLlm({ originalTitle, originalHtml, competitorA, competitorB }) {
@@ -142,14 +148,49 @@ export async function rewriteWithLlm({ originalTitle, originalHtml, competitorA,
   const model =
     process.env.LLM_MODEL || (provider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini');
 
-  const system =
-    'You are a careful editor. Rewrite the provided original blog article to be more structured and similar in style/format to the two competitor articles, without inventing facts. Output HTML only.';
+  const system = `You are a professional content editor.
+You rewrite articles to improve clarity and structure
+without copying wording, sentence structure, or layout
+from reference sources.
 
-  const user = `ORIGINAL TITLE:\n${originalTitle}\n\nORIGINAL HTML:\n${originalHtml}\n\nCOMPETITOR A (${competitorA.url})\nTITLE: ${competitorA.title ?? ''}\nTEXT:\n${competitorA.text}\n\nCOMPETITOR B (${competitorB.url})\nTITLE: ${competitorB.title ?? ''}\nTEXT:\n${competitorB.text}\n\nREQUIREMENTS:\n- Keep topic consistent with original.\n- Improve formatting and structure (headings, sections, lists).\n- Do not add a References section; the caller will append it.\n- Return valid HTML.\n\nReturn ONLY the rewritten HTML.`;
+You must:
+- Preserve original meaning
+- Avoid plagiarism strictly
+- Use original wording
+- Not invent facts`;
+
+  const originalContent = htmlToText(originalHtml, { wordwrap: false });
+
+  const user = `Original Article:
+<<<
+${originalContent}
+>>>
+
+Reference Articles (quality benchmark only):
+1. ${competitorA.url}
+2. ${competitorB.url}
+
+Task:
+Rewrite the original article to be clearer and more professional,
+similar in quality to top Google results.
+Do not copy wording or structure.
+Output markdown only.`;
+
+  let result;
 
   if (provider === 'gemini') {
-    return rewriteWithGemini({ apiKey, model, system, user });
+    result = await rewriteWithGemini({ apiKey, model, system, user });
+  } else {
+    result = await rewriteWithOpenAi({ apiKey, model, system, user });
   }
 
-  return rewriteWithOpenAi({ apiKey, model, system, user });
+  const markdown = result?.markdown;
+  if (!markdown || typeof markdown !== 'string') {
+    throw new Error('LLM returned empty content');
+  }
+
+  // Store/render as HTML in the app, while forcing the model output to be Markdown.
+  const html = marked.parse(markdown);
+
+  return { title: result?.title ?? null, html };
 }
