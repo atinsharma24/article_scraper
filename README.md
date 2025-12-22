@@ -132,7 +132,7 @@ The repository includes mock scripts for testing without external API access:
 ### Production Scripts (Requires External APIs)
 
 These scripts require `SERPAPI_API_KEY` and `LLM_API_KEY` in your `.env` file.
-You can use OpenAI (default) or Gemini by setting `LLM_PROVIDER`.
+You can use Gemini (default) or OpenAI by setting `LLM_PROVIDER`.
 
 - **`npm run seed-originals`**: Scrapes BeyondChats.com and seeds real articles
 - **`npm run run-once`**: Runs the full pipeline (SERP + scrape + LLM + publish)
@@ -195,8 +195,8 @@ The pipeline runs automatically every 6 hours, or you can trigger it manually.
      API_BASE_URL=https://your-app.onrender.com
      SERPAPI_API_KEY=your_serpapi_key
    # LLM configuration
-   # Provider: openai (default) or gemini
-   LLM_PROVIDER=openai (optional)
+   # Provider: gemini (default) or openai
+   LLM_PROVIDER=gemini (optional)
    LLM_API_KEY=your_llm_key
    # Model is optional; defaults depend on provider:
    # - openai: gpt-4o-mini

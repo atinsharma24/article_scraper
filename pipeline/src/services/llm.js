@@ -5,7 +5,7 @@ function requireEnv(name) {
 }
 
 function getProvider() {
-  const raw = (process.env.LLM_PROVIDER || 'openai').trim().toLowerCase();
+  const raw = (process.env.LLM_PROVIDER || 'gemini').trim().toLowerCase();
   if (raw === 'openai' || raw === 'gemini') return raw;
   throw new Error(`Unsupported LLM_PROVIDER: ${raw} (expected: openai|gemini)`);
 }

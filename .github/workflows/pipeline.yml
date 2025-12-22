@@ -13,7 +13,7 @@ on:
       llm_provider:
         description: "LLM provider: openai (default) or gemini"
         required: false
-        default: "openai"
+        default: "gemini"
       api_base_url:
         description: "Backend API base URL (defaults to Render)"
         required: false
@@ -109,7 +109,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           # Configure these as GitHub Actions repository Variables (not Secrets):
           # Settings -> Secrets and variables -> Actions -> Variables
-          LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || vars['LLM_PROVIDER'] || 'openai' }}
+          LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || vars['LLM_PROVIDER'] || 'gemini' }}
           LLM_MODEL: ${{ vars['LLM_MODEL'] }}
           MAX_COMPETITOR_CHARS: ${{ vars['MAX_COMPETITOR_CHARS'] }}
         run: npm run run-once
