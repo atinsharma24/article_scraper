@@ -31,6 +31,8 @@ class Article extends Model
 
     public function updates(): HasMany
     {
-        return $this->hasMany(self::class, 'parent_id')->where('type', 'updated');
+        return $this->hasMany(self::class, 'parent_id')
+            ->where('type', 'updated')
+            ->orderByDesc('created_at');
     }
 }

@@ -49,6 +49,11 @@ class ArticleController extends Controller
             $query->where('parent_id', request('parent_id'));
         }
 
+        // Helpful for the frontend: show whether an original already has updated versions.
+        if (request('type') === 'original' && !request()->filled('parent_id')) {
+            $query->withCount('updates');
+        }
+
         $perPage = (int) request('per_page', 10);
         $perPage = max(1, min(100, $perPage));
 

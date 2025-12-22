@@ -4,7 +4,16 @@ on:
   schedule:
     # Every 6 hours (UTC)
     - cron: '0 */6 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline mode: real (uses SERPAPI+LLM) or mock (no external APIs)"
+        required: false
+        default: "real"
+      api_base_url:
+        description: "Backend API base URL (defaults to Render)"
+        required: false
+        default: "https://content-pipeline-ruor.onrender.com"
 
 concurrency:
   group: content-pipeline
@@ -30,12 +39,38 @@ jobs:
         working-directory: pipeline
         run: npm ci
 
-      - name: Run pipeline
+      - name: Resolve API base URL
+        id: api
+        shell: bash
+        run: |
+          set -euo pipefail
+          # For scheduled runs, fall back to secrets.API_BASE_URL.
+          API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
+          API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
+          API_BASE_URL="$API_BASE_URL_INPUT"
+          if [ -z "$API_BASE_URL" ]; then
+            API_BASE_URL="$API_BASE_URL_SECRET"
+          fi
+          API_BASE_URL="${API_BASE_URL%/}"
+          if [ -z "$API_BASE_URL" ]; then
+            echo "API base URL is empty. Set workflow input api_base_url or repo secret API_BASE_URL."
+            exit 1
+          fi
+          echo "API_BASE_URL=$API_BASE_URL" >> "$GITHUB_OUTPUT"
+          echo "Using API_BASE_URL=$API_BASE_URL"
+
+      - name: Run pipeline (real)
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'real' }}
         working-directory: pipeline
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
           SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          MAX_COMPETITOR_CHARS: ${{ secrets.MAX_COMPETITOR_CHARS }}
         run: npm run run-once
+
+      - name: Run pipeline (mock)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'mock' }}
+        working-directory: pipeline
+        env:
+          API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
+        run: npm run run-mock
