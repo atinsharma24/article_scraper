@@ -107,7 +107,11 @@ jobs:
           API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
           SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || 'openai' }}
+          # Configure these as GitHub Actions repository Variables (not Secrets):
+          # Settings -> Secrets and variables -> Actions -> Variables
+          LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || vars['LLM_PROVIDER'] || 'openai' }}
+          LLM_MODEL: ${{ vars['LLM_MODEL'] }}
+          MAX_COMPETITOR_CHARS: ${{ vars['MAX_COMPETITOR_CHARS'] }}
         run: npm run run-once
 
       - name: Run pipeline (mock)
