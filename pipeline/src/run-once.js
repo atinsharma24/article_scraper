@@ -17,6 +17,7 @@ async function main() {
 	requireEnv('API_BASE_URL');
 	requireEnv('SERPAPI_API_KEY');
 	requireEnv('LLM_API_KEY');
+	// Optional: LLM_PROVIDER=openai|gemini (default openai)
 
 	const original = await fetchLatestOriginalNeedingUpdate();
 	if (!original) {
@@ -66,6 +67,21 @@ async function main() {
 }
 
 main().catch((err) => {
+	if (
+		err?.code === 'insufficient_quota' ||
+		err?.code === 'quota_exceeded' ||
+		err?.message?.includes('insufficient_quota') ||
+		err?.message?.toLowerCase?.().includes('quota')
+	) {
+		console.error(err?.message ?? err);
+		console.error(
+			'Action: update GitHub secret LLM_API_KEY to a key with quota (or enable billing), then rerun Content Pipeline in mode=real.\n' +
+			'If using Gemini, also set LLM_PROVIDER=gemini.\n' +
+			'Workaround: run Content Pipeline in mode=mock to generate a non-LLM updated version.'
+		);
+		process.exit(1);
+	}
+
 	console.error(err);
 	process.exit(1);
 });

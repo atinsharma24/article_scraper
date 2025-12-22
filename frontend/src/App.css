@@ -131,6 +131,26 @@
 
 .articleBody {
   overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.articleBody img,
+.articleBody video,
+.articleBody svg,
+.articleBody iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.articleBody figure {
+  margin: 1rem 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.articleBody pre {
+  max-width: 100%;
+  overflow: auto;
 }
 
 .refs {

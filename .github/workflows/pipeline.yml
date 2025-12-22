@@ -10,6 +10,10 @@ on:
         description: "Pipeline mode: real (uses SERPAPI+LLM) or mock (no external APIs)"
         required: false
         default: "real"
+      llm_provider:
+        description: "LLM provider: openai (default) or gemini"
+        required: false
+        default: "openai"
       api_base_url:
         description: "Backend API base URL (defaults to Render)"
         required: false
@@ -59,6 +63,43 @@ jobs:
           echo "API_BASE_URL=$API_BASE_URL" >> "$GITHUB_OUTPUT"
           echo "Using API_BASE_URL=$API_BASE_URL"
 
+      - name: Verify LLM API key (real)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'real' }}
+        shell: bash
+        env:
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_PROVIDER: ${{ inputs.llm_provider }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LLM_API_KEY:-}" ]; then
+            echo "Missing LLM_API_KEY secret. Add it in GitHub Actions secrets."
+            exit 1
+          fi
+
+          if [ "${LLM_PROVIDER}" = "gemini" ]; then
+            # Calls a lightweight endpoint; does not print secrets.
+            code=$(curl -sS -o /tmp/gemini_resp.json -w "%{http_code}" \
+              "https://generativelanguage.googleapis.com/v1beta/models?key=${LLM_API_KEY}")
+            if [ "$code" != "200" ]; then
+              echo "Gemini key check failed (HTTP $code)."
+              head -c 800 /tmp/gemini_resp.json; echo
+              exit 1
+            fi
+            echo "Gemini key looks valid (HTTP 200)."
+            exit 0
+          fi
+
+          # Default: OpenAI
+          code=$(curl -sS -o /tmp/openai_resp.json -w "%{http_code}" \
+            -H "Authorization: Bearer $LLM_API_KEY" \
+            https://api.openai.com/v1/models)
+          if [ "$code" != "200" ]; then
+            echo "OpenAI key check failed (HTTP $code)."
+            head -c 800 /tmp/openai_resp.json; echo
+            exit 1
+          fi
+          echo "OpenAI key looks valid (HTTP 200)."
+
       - name: Run pipeline (real)
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'real' }}
         working-directory: pipeline
@@ -66,6 +107,7 @@ jobs:
           API_BASE_URL: ${{ steps.api.outputs.API_BASE_URL }}
           SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || 'openai' }}
         run: npm run run-once
 
       - name: Run pipeline (mock)
