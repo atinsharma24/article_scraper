@@ -4,28 +4,8 @@ import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './servi
 import { googleTopCompetitors } from './services/serpapi.js';
 import { extractMainArticle } from './services/scrape.js';
 import { rewriteWithLlm } from './services/llm.js';
-
-function requireEnv(name) {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing required env var: ${name}`);
-	}
-	return value;
-}
-
-function parseMaxUpdatesPerRun() {
-	const raw = String(process.env.MAX_UPDATES_PER_RUN ?? '1').trim();
-	const n = Number(raw);
-	if (Number.isFinite(n) && n > 0) return Math.floor(n);
-	return 1;
-}
-
-function parseMaxCompetitorChars() {
-	const raw = String(process.env.MAX_COMPETITOR_CHARS ?? '12000').trim();
-	const n = Number(raw);
-	if (Number.isFinite(n) && n > 100) return Math.floor(n);
-	return 12000;
-}
+import { requireEnv, parseMaxUpdatesPerRun, parseMaxCompetitorChars } from './utils/env.js';
+import { generateCitationsHtml } from './utils/html.js';
 
 async function pickAndScrapeTwoCompetitors(query) {
 	// Pull more than 2 candidates, then scrape until we successfully extract 2.
@@ -113,8 +93,7 @@ async function main() {
 				{ url: competitors[1].url, title: competitors[1].serpTitle ?? competitors[1].extractedTitle ?? null },
 			];
 
-			// Ensure citations exist at the bottom of the generated article.
-			const citationsHtml = `\n\n<hr/>\n<h2>References</h2>\n<ul>\n<li><a href="${references[0].url}" target="_blank" rel="noopener noreferrer">${references[0].title ?? references[0].url}</a></li>\n<li><a href="${references[1].url}" target="_blank" rel="noopener noreferrer">${references[1].title ?? references[1].url}</a></li>\n</ul>\n`;
+			const citationsHtml = generateCitationsHtml(references);
 
 			const updatedPayload = {
 				type: 'updated',

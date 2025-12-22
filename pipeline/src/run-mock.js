@@ -1,13 +1,7 @@
 import 'dotenv/config';
 import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './services/laravelApi.js';
-
-function requireEnv(name) {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing required env var: ${name}`);
-	}
-	return value;
-}
+import { requireEnv } from './utils/env.js';
+import { generateCitationsHtml } from './utils/html.js';
 
 // Mock competitor references for testing without external APIs
 const mockCompetitors = [
@@ -67,14 +61,7 @@ async function main() {
 		{ url: mockCompetitors[1].url, title: mockCompetitors[1].title },
 	];
 
-	const citationsHtml = `
-<hr style="margin: 2rem 0;"/>
-<h2>References</h2>
-<ul>
-<li><a href="${references[0].url}" target="_blank" rel="noopener noreferrer">${references[0].title}</a></li>
-<li><a href="${references[1].url}" target="_blank" rel="noopener noreferrer">${references[1].title}</a></li>
-</ul>
-`;
+	const citationsHtml = generateCitationsHtml(references);
 
 	const updatedPayload = {
 		type: 'updated',

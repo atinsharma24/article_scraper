@@ -1,11 +1,6 @@
-function requireEnv(name) {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing env var: ${name}`);
-  return value;
-}
-
 import { htmlToText } from 'html-to-text';
 import { marked } from 'marked';
+import { requireEnv } from '../utils/env.js';
 
 function getProvider() {
   const raw = (process.env.LLM_PROVIDER || 'gemini').trim().toLowerCase();

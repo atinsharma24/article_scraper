@@ -2,14 +2,7 @@ import 'dotenv/config';
 
 import { extractMainArticle } from './services/scrape.js';
 import { publishOriginalArticle } from './services/laravelApi.js';
-
-function requireEnv(name) {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing required env var: ${name}`);
-	}
-	return value;
-}
+import { requireEnv } from './utils/env.js';
 
 function parseCountFromArgs() {
 	const idx = process.argv.findIndex((a) => a === '--count');
