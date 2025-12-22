@@ -12,52 +12,80 @@ function requireEnv(name) {
 	return value;
 }
 
+function parseMaxUpdatesPerRun() {
+	const raw = String(process.env.MAX_UPDATES_PER_RUN ?? '1').trim();
+	const n = Number(raw);
+	if (Number.isFinite(n) && n > 0) return Math.floor(n);
+	return 1;
+}
+
 async function main() {
 	requireEnv('API_BASE_URL');
 	requireEnv('SERPAPI_API_KEY');
 	requireEnv('LLM_API_KEY');
-	// Optional: LLM_PROVIDER=openai|gemini (default openai)
+	// Optional: LLM_PROVIDER=openai|gemini (default gemini)
+	const maxUpdates = parseMaxUpdatesPerRun();
+	console.log(`MAX_UPDATES_PER_RUN=${maxUpdates}`);
 
-	const original = await fetchLatestOriginalNeedingUpdate();
-	if (!original) {
-		console.log('No original article needing update. Exiting.');
-		return;
+	let ok = 0;
+	let failed = 0;
+
+	for (let i = 0; i < maxUpdates; i += 1) {
+		const original = await fetchLatestOriginalNeedingUpdate();
+		if (!original) {
+			if (ok === 0 && failed === 0) {
+				console.log('No original article needing update. Exiting.');
+			}
+			break;
+		}
+
+		console.log(`Selected original: id=${original.id} title=${original.title}`);
+
+		try {
+			const competitors = await googleTopCompetitors(original.title);
+			if (competitors.length < 2) {
+				throw new Error(`Expected 2 competitor URLs, got ${competitors.length}`);
+			}
+
+			console.log('Competitor URLs:', competitors.map((c) => c.url).join(' | '));
+
+			const rewritten = await rewriteWithLlm({
+				originalTitle: original.title,
+				originalHtml: original.content,
+				competitorA: { url: competitors[0].url },
+				competitorB: { url: competitors[1].url },
+			});
+
+			const references = [
+				{ url: competitors[0].url, title: competitors[0].title ?? null },
+				{ url: competitors[1].url, title: competitors[1].title ?? null },
+			];
+
+			// Ensure citations exist at the bottom of the generated article.
+			const citationsHtml = `\n\n<hr/>\n<h2>References</h2>\n<ul>\n<li><a href="${references[0].url}" target="_blank" rel="noopener noreferrer">${references[0].title ?? references[0].url}</a></li>\n<li><a href="${references[1].url}" target="_blank" rel="noopener noreferrer">${references[1].title ?? references[1].url}</a></li>\n</ul>\n`;
+
+			const updatedPayload = {
+				type: 'updated',
+				parent_id: original.id,
+				title: rewritten.title ?? original.title,
+				content: `${rewritten.html}\n${citationsHtml}`,
+				references,
+			};
+
+			const published = await publishUpdatedArticle(updatedPayload);
+			ok += 1;
+			console.log(
+				`Published updated article: id=${published.id} parent_id=${published.parent_id} (ok=${ok} failed=${failed})`
+			);
+		} catch (err) {
+			failed += 1;
+			console.error(`Failed updating original id=${original.id}`);
+			console.error(err?.message ?? err);
+		}
 	}
 
-	console.log(`Selected original: id=${original.id} title=${original.title}`);
-
-	const competitors = await googleTopCompetitors(original.title);
-	if (competitors.length < 2) {
-		throw new Error(`Expected 2 competitor URLs, got ${competitors.length}`);
-	}
-
-	console.log('Competitor URLs:', competitors.map((c) => c.url).join(' | '));
-
-	const rewritten = await rewriteWithLlm({
-		originalTitle: original.title,
-		originalHtml: original.content,
-		competitorA: { url: competitors[0].url },
-		competitorB: { url: competitors[1].url },
-	});
-
-	const references = [
-		{ url: competitors[0].url, title: competitors[0].title ?? null },
-		{ url: competitors[1].url, title: competitors[1].title ?? null },
-	];
-
-	// Ensure citations exist at the bottom of the generated article.
-	const citationsHtml = `\n\n<hr/>\n<h2>References</h2>\n<ul>\n<li><a href="${references[0].url}" target="_blank" rel="noopener noreferrer">${references[0].title ?? references[0].url}</a></li>\n<li><a href="${references[1].url}" target="_blank" rel="noopener noreferrer">${references[1].title ?? references[1].url}</a></li>\n</ul>\n`;
-
-	const updatedPayload = {
-		type: 'updated',
-		parent_id: original.id,
-		title: rewritten.title ?? original.title,
-		content: `${rewritten.html}\n${citationsHtml}`,
-		references,
-	};
-
-	const published = await publishUpdatedArticle(updatedPayload);
-	console.log(`Published updated article: id=${published.id} parent_id=${published.parent_id}`);
+	console.log(`Done. ok=${ok} failed=${failed}`);
+	if (failed > 0) process.exit(1);
 }
 
 main().catch((err) => {

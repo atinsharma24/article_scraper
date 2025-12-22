@@ -188,6 +188,8 @@ You can use Gemini (default) or OpenAI by setting `LLM_PROVIDER`.
 
 The pipeline runs automatically every 6 hours, or you can trigger it manually.
 
+Note: by default, one Content Pipeline run updates **1** original article. To update multiple originals in one run, set the workflow input `max_updates` (manual run) or set the Actions variable `MAX_UPDATES_PER_RUN`.
+
 1. **Set GitHub Actions Secrets**:
    - Go to: Repository Settings → Secrets and variables → Actions
    - Add the following secrets:

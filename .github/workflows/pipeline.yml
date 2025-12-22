@@ -10,6 +10,10 @@ on:
         description: "Pipeline mode: real (uses SERPAPI+LLM) or mock (no external APIs)"
         required: false
         default: "real"
+      max_updates:
+        description: "How many originals to update in this run (default 1)"
+        required: false
+        default: "1"
       llm_provider:
         description: "LLM provider: openai (default) or gemini"
         required: false
@@ -112,6 +116,7 @@ jobs:
           LLM_PROVIDER: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_provider || vars['LLM_PROVIDER'] || 'gemini' }}
           LLM_MODEL: ${{ vars['LLM_MODEL'] }}
           MAX_COMPETITOR_CHARS: ${{ vars['MAX_COMPETITOR_CHARS'] }}
+          MAX_UPDATES_PER_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.max_updates || vars['MAX_UPDATES_PER_RUN'] || '1' }}
         run: npm run run-once
 
       - name: Run pipeline (mock)
