@@ -1,6 +1,24 @@
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+function getApiBaseUrl() {
+  const raw = (import.meta.env.VITE_API_BASE_URL || '').trim()
+  const base = raw.replace(/\/$/, '')
+
+  if (!base) {
+    throw new Error(
+      'Missing VITE_API_BASE_URL. Set it in Vercel to https://content-pipeline-ruor.onrender.com'
+    )
+  }
+
+  if (!/^https?:\/\//i.test(base)) {
+    throw new Error(
+      `Invalid VITE_API_BASE_URL (${raw}). It must be an absolute URL like https://content-pipeline-ruor.onrender.com`
+    )
+  }
+
+  return base
+}
 
 async function requestJson(path) {
+  const apiBaseUrl = getApiBaseUrl()
   const res = await fetch(`${apiBaseUrl}${path}`)
   if (res.status === 204) return null
   if (!res.ok) {
@@ -11,7 +29,8 @@ async function requestJson(path) {
 }
 
 export async function listArticles({ type, parentId, perPage = 10 }) {
-  const url = new URL(`${apiBaseUrl}/api/articles`)
+  const apiBaseUrl = getApiBaseUrl()
+  const url = new URL('/api/articles', apiBaseUrl)
   if (type) url.searchParams.set('type', type)
   if (parentId) url.searchParams.set('parent_id', parentId)
   url.searchParams.set('per_page', String(perPage))

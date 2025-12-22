@@ -64,7 +64,7 @@ function App() {
           <div className="title">BeyondChats Articles</div>
           <div className="subtitle">Original and updated versions</div>
         </div>
-        <div className="meta">API: {apiBaseUrl}</div>
+        <div className="meta">API: {apiBaseUrl || '(not set)'}</div>
       </header>
 
       <main className="main">
