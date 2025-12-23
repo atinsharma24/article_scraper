@@ -2,6 +2,12 @@ import { extract } from '@extractus/article-extractor';
 import { htmlToText } from 'html-to-text';
 import type { ExtractionResult } from '../types/index.js';
 
+type ExtractusResult = {
+  title?: string | null;
+  text?: string | null;
+  content?: string | null;
+};
+
 function headers(): Record<string, string> {
   return {
     'user-agent':
@@ -27,10 +33,10 @@ function parseTitleFromHtml(html: string): string | null {
 }
 
 export async function extractMainArticle(url: string): Promise<ExtractionResult> {
-  const result = await extract(url, {}, { headers: headers() }) as any;
-  const html = result?.content ?? '';
+  const result = (await extract(url, {}, { headers: headers() })) as ExtractusResult | null;
+  const html = typeof result?.content === 'string' ? result.content : '';
 
-  let title = result?.title ?? null;
+  let title = typeof result?.title === 'string' ? result.title : null;
   let text = typeof result?.text === 'string' ? result.text : '';
 
   if (!text || !text.trim()) {

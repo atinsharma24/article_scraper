@@ -2,7 +2,7 @@
 
 A full-stack content pipeline application that scrapes original articles, rewrites them using AI, and displays both versions side-by-side.
 
-![Application Screenshot](https://github.com/user-attachments/assets/3d458a3e-69b0-4eb0-9734-aa35b0987fee)
+![Application Screenshot](docs/assets/app-screenshot.png)
 
 ## Stack
 - **Database**: Supabase Postgres (production) / SQLite (local development)

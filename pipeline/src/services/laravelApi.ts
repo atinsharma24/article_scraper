@@ -68,7 +68,39 @@ async function requestJson<T>(path: string, options: FetchOptions = {}): Promise
   );
 
   if (response.status === 204) {
-    return null as T;
+    throw new Error(`Unexpected 204 No Content for ${url}`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    const err = new Error(`HTTP ${response.status} for ${url}: ${body}`) as any;
+    err.status = response.status;
+    err.url = url;
+    err.body = body;
+    throw err;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function requestJsonOrNull<T>(path: string, options: FetchOptions = {}): Promise<T | null> {
+  const url = `${apiBaseUrl()}${path}`;
+
+  const response = await fetchWithRetry(
+    url,
+    {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(options.headers ?? {}),
+      },
+    },
+    { retries: 2, timeoutMs: 120_000 }
+  );
+
+  if (response.status === 204) {
+    return null;
   }
 
   if (!response.ok) {
@@ -84,7 +116,7 @@ async function requestJson<T>(path: string, options: FetchOptions = {}): Promise
 }
 
 export async function fetchLatestOriginalNeedingUpdate(): Promise<Article | null> {
-  return requestJson<Article | null>('/api/articles/latest-original-needing-update');
+  return requestJsonOrNull<Article>('/api/articles/latest-original-needing-update');
 }
 
 export async function publishUpdatedArticle(payload: UpdatedArticlePayload): Promise<Article> {
