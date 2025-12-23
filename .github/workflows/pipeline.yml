@@ -52,10 +52,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # For scheduled runs, fall back to secrets.API_BASE_URL.
+          # For workflow_dispatch runs, prefer secrets.API_BASE_URL by default.
+          # For schedule runs, inputs are empty anyway.
           API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
           API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
           API_BASE_URL="$API_BASE_URL_SECRET"
+
+          # Only override with the input if the user explicitly provides a real URL.
           if [ -n "$API_BASE_URL_INPUT" ] && [ "$API_BASE_URL_INPUT" != "https://your-app.onrender.com" ]; then
             API_BASE_URL="$API_BASE_URL_INPUT"
           fi

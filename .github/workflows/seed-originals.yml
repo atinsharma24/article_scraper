@@ -41,7 +41,11 @@ jobs:
           set -euo pipefail
           API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
           API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
+
+          # Prefer the repo secret by default for workflow_dispatch.
           API_BASE_URL="$API_BASE_URL_SECRET"
+
+          # Only override with the input if the user explicitly provides a real URL.
           if [ -n "$API_BASE_URL_INPUT" ] && [ "$API_BASE_URL_INPUT" != "https://your-app.onrender.com" ]; then
             API_BASE_URL="$API_BASE_URL_INPUT"
           fi
