@@ -13,5 +13,11 @@
     "dotenv": "^16.4.5",
     "html-to-text": "^9.0.5",
     "marked": "^16.4.2"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4",
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }
