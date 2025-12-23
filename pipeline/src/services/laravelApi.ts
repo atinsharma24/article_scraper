@@ -1,9 +1,24 @@
-function apiBaseUrl() {
+import type { Article, OriginalArticlePayload, UpdatedArticlePayload } from '../types/index.js';
+
+function apiBaseUrl(): string {
   return (process.env.API_BASE_URL ?? '').replace(/\/$/, '');
 }
 
-async function fetchWithRetry(url, options, { retries, timeoutMs }) {
-  let lastError;
+interface FetchOptions extends RequestInit {
+  headers?: Record<string, string>;
+}
+
+interface FetchRetryOptions {
+  retries: number;
+  timeoutMs: number;
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: FetchOptions,
+  { retries, timeoutMs }: FetchRetryOptions
+): Promise<Response> {
+  let lastError: Error | undefined;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const attemptTimeoutMs = timeoutMs;
     try {
@@ -15,10 +30,10 @@ async function fetchWithRetry(url, options, { retries, timeoutMs }) {
         clearTimeout(timeout);
       }
     } catch (err) {
-      lastError = err;
+      lastError = err as Error;
 
-      const isAbort = err?.name === 'AbortError';
-      const causeCode = err?.cause?.code;
+      const isAbort = (err as any)?.name === 'AbortError';
+      const causeCode = (err as any)?.cause?.code;
       const isTimeoutish = isAbort || causeCode === 'UND_ERR_HEADERS_TIMEOUT';
 
       if (attempt >= retries || !isTimeoutish) {
@@ -33,7 +48,7 @@ async function fetchWithRetry(url, options, { retries, timeoutMs }) {
   throw lastError;
 }
 
-async function requestJson(path, options = {}) {
+async function requestJson<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const url = `${apiBaseUrl()}${path}`;
 
   if (!apiBaseUrl()) {
@@ -54,34 +69,34 @@ async function requestJson(path, options = {}) {
   );
 
   if (response.status === 204) {
-    return null;
+    return null as T;
   }
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    const err = new Error(`HTTP ${response.status} for ${url}: ${body}`);
+    const err = new Error(`HTTP ${response.status} for ${url}: ${body}`) as any;
     err.status = response.status;
     err.url = url;
     err.body = body;
     throw err;
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
-export async function fetchLatestOriginalNeedingUpdate() {
-  return requestJson('/api/articles/latest-original-needing-update');
+export async function fetchLatestOriginalNeedingUpdate(): Promise<Article | null> {
+  return requestJson<Article | null>('/api/articles/latest-original-needing-update');
 }
 
-export async function publishUpdatedArticle(payload) {
-  return requestJson('/api/articles', {
+export async function publishUpdatedArticle(payload: UpdatedArticlePayload): Promise<Article> {
+  return requestJson<Article>('/api/articles', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 }
 
-export async function publishOriginalArticle(payload) {
-  return requestJson('/api/articles', {
+export async function publishOriginalArticle(payload: OriginalArticlePayload): Promise<Article> {
+  return requestJson<Article>('/api/articles', {
     method: 'POST',
     body: JSON.stringify(payload),
   });

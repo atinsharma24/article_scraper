@@ -1,19 +1,15 @@
-function isDisallowedDomain(url) {
+import type { SerpApiResponse, CompetitorData } from '../types/index.js';
+
+function isDisallowedDomain(url: string): boolean {
   try {
     const host = new URL(url).hostname.toLowerCase();
-    // Exclude the source site and common social/ugc domains that frequently block scraping.
     const disallowedHosts = new Set([
       'beyondchats.com',
       'www.beyondchats.com',
-
-      // Often blocks scrapers / requires auth
       'tmforum.org',
       'www.tmforum.org',
-
-      // UGC / frequently blocks and/or noisy for "competitor article" use-case
       'reddit.com',
       'www.reddit.com',
-
       'linkedin.com',
       'www.linkedin.com',
       'facebook.com',
@@ -44,7 +40,7 @@ function isDisallowedDomain(url) {
   }
 }
 
-function looksLikeArticle(url) {
+function looksLikeArticle(url: string): boolean {
   try {
     const u = new URL(url);
     const path = u.pathname.toLowerCase();
@@ -58,15 +54,21 @@ function looksLikeArticle(url) {
   }
 }
 
-export async function googleTopCompetitors(query, { limit = 10 } = {}) {
+interface GoogleTopCompetitorsOptions {
+  limit?: number;
+}
+
+export async function googleTopCompetitors(
+  query: string,
+  { limit = 10 }: GoogleTopCompetitorsOptions = {}
+): Promise<CompetitorData[]> {
   const apiKey = process.env.SERPAPI_API_KEY;
   const url = new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine', 'google');
   url.searchParams.set('q', query);
-  url.searchParams.set('api_key', apiKey);
+  url.searchParams.set('api_key', apiKey!);
 
   const wanted = Math.max(2, Number(limit) || 10);
-  // Fetch more than we intend to keep so we can skip blocked/irrelevant domains.
   const fetchNum = Math.max(10, Math.min(30, wanted));
   url.searchParams.set('num', String(fetchNum));
 
@@ -75,17 +77,17 @@ export async function googleTopCompetitors(query, { limit = 10 } = {}) {
     throw new Error(`SerpAPI error: HTTP ${res.status}`);
   }
 
-  const data = await res.json();
+  const data = await res.json() as SerpApiResponse;
   const organic = Array.isArray(data.organic_results) ? data.organic_results : [];
 
-  const picked = [];
+  const picked: CompetitorData[] = [];
   for (const r of organic) {
     const link = r.link;
     if (!link) continue;
     if (isDisallowedDomain(link)) continue;
     if (!looksLikeArticle(link)) continue;
 
-    picked.push({ url: link, title: r.title ?? null });
+    picked.push({ url: link, title: r.title ?? null, text: '' });
     if (picked.length >= wanted) break;
   }
 

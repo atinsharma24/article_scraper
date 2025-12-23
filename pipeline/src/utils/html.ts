@@ -2,12 +2,9 @@
  * HTML formatting utilities for article content
  */
 
-/**
- * Generate HTML for citation references
- * @param {Array<{url: string, title: string|null}>} references - Array of reference objects
- * @returns {string} HTML string with formatted citations
- */
-export function generateCitationsHtml(references) {
+import type { Reference } from '../types/index.js';
+
+export function generateCitationsHtml(references: Reference[]): string {
 	if (!Array.isArray(references) || references.length === 0) {
 		return '';
 	}

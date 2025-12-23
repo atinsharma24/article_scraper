@@ -7,14 +7,20 @@ import { rewriteWithLlm } from './services/llm.js';
 import { requireEnv, parseMaxUpdatesPerRun, parseMaxCompetitorChars } from './utils/env.js';
 import { generateCitationsHtml } from './utils/html.js';
 
-async function pickAndScrapeTwoCompetitors(query) {
-	// Pull more than 2 candidates, then scrape until we successfully extract 2.
+interface ScrapedCompetitor {
+	url: string;
+	serpTitle: string | null;
+	extractedTitle: string | null;
+	text: string;
+}
+
+async function pickAndScrapeTwoCompetitors(query: string): Promise<ScrapedCompetitor[]> {
 	const candidates = await googleTopCompetitors(query, { limit: 20 });
 	if (candidates.length < 2) {
 		throw new Error(`Expected at least 2 competitor URLs, got ${candidates.length}`);
 	}
 
-	const chosen = [];
+	const chosen: ScrapedCompetitor[] = [];
 	for (const c of candidates) {
 		if (chosen.length >= 2) break;
 		try {
@@ -31,7 +37,7 @@ async function pickAndScrapeTwoCompetitors(query) {
 				text,
 			});
 		} catch (err) {
-			const msg = String(err?.message ?? err);
+			const msg = String((err as any)?.message ?? err);
 			console.log(`Skip competitor (scrape failed): ${c.url} :: ${msg}`);
 			continue;
 		}
@@ -46,11 +52,10 @@ async function pickAndScrapeTwoCompetitors(query) {
 	return chosen;
 }
 
-async function main() {
+async function main(): Promise<void> {
 	requireEnv('API_BASE_URL');
 	requireEnv('SERPAPI_API_KEY');
 	requireEnv('LLM_API_KEY');
-	// Optional: LLM_PROVIDER=openai|gemini (default gemini)
 	const maxUpdates = parseMaxUpdatesPerRun();
 	const maxChars = parseMaxCompetitorChars();
 	console.log(`MAX_UPDATES_PER_RUN=${maxUpdates}`);
@@ -96,7 +101,7 @@ async function main() {
 			const citationsHtml = generateCitationsHtml(references);
 
 			const updatedPayload = {
-				type: 'updated',
+				type: 'updated' as const,
 				parent_id: original.id,
 				title: rewritten.title ?? original.title,
 				content: `${rewritten.html}\n${citationsHtml}`,
@@ -111,7 +116,7 @@ async function main() {
 		} catch (err) {
 			failed += 1;
 			console.error(`Failed updating original id=${original.id}`);
-			console.error(err?.message ?? err);
+			console.error((err as any)?.message ?? err);
 		}
 	}
 
@@ -120,13 +125,14 @@ async function main() {
 }
 
 main().catch((err) => {
+	const errAny = err as any;
 	if (
-		err?.code === 'insufficient_quota' ||
-		err?.code === 'quota_exceeded' ||
-		err?.message?.includes('insufficient_quota') ||
-		err?.message?.toLowerCase?.().includes('quota')
+		errAny?.code === 'insufficient_quota' ||
+		errAny?.code === 'quota_exceeded' ||
+		errAny?.message?.includes('insufficient_quota') ||
+		errAny?.message?.toLowerCase?.().includes('quota')
 	) {
-		console.error(err?.message ?? err);
+		console.error(errAny?.message ?? err);
 		console.error(
 			'Action: update GitHub secret LLM_API_KEY to a key with quota (or enable billing), then rerun Content Pipeline in mode=real.\n' +
 			'If using Gemini, also set LLM_PROVIDER=gemini.\n' +
@@ -138,4 +144,3 @@ main().catch((err) => {
 	console.error(err);
 	process.exit(1);
 });
-
