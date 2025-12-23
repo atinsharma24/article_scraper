@@ -10,7 +10,7 @@ on:
       api_base_url:
         description: "Backend API base URL (defaults to Render)"
         required: false
-        default: "https://your-app.onrender.com"
+        default: ""
       count:
         description: "Number of original BeyondChats posts to ingest"
         required: false
@@ -42,12 +42,15 @@ jobs:
           API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
           API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
           API_BASE_URL="$API_BASE_URL_INPUT"
+          if [ "$API_BASE_URL" = "https://your-app.onrender.com" ]; then
+            API_BASE_URL=""
+          fi
           if [ -z "$API_BASE_URL" ]; then
             API_BASE_URL="$API_BASE_URL_SECRET"
           fi
           API_BASE_URL="${API_BASE_URL%/}"
           if [ -z "$API_BASE_URL" ]; then
-            echo "API base URL is empty. Set workflow input api_base_url or repo secret API_BASE_URL."
+            echo "API base URL is empty. Set workflow input api_base_url or repo secret API_BASE_URL (recommended)."
             exit 1
           fi
           echo "API_BASE_URL=$API_BASE_URL" >> "$GITHUB_OUTPUT"
