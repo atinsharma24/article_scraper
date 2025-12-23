@@ -153,22 +153,6 @@
   overflow: auto;
 }
 
-.refs {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(127, 127, 127, 0.2);
-}
-
-.refsTitle {
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.refsList {
-  margin: 0;
-  padding-left: 1.25rem;
-}
-
 .error {
   padding: 0.75rem;
   border: 1px solid rgba(255, 0, 0, 0.3);

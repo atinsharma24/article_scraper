@@ -29,16 +29,16 @@ This document confirms that the BeyondChats TPM Assignment has been built from s
 - [x] `.env.example` file created with all required variables
 - [x] npm dependencies installed successfully
 - [x] **Mock Scripts Created for Offline Testing:**
-  - `seed-local.js` - Seeds 3 sample articles without external API access
-  - `run-mock.js` - Runs complete pipeline flow without SERP/LLM APIs
+  - `seed-local.ts` - Seeds 3 sample articles without external API access
+  - `run-mock.ts` - Runs complete pipeline flow without SERP/LLM APIs
 - [x] **Production Scripts Available:**
-  - `seed-originals.js` - Scrapes BeyondChats.com (requires network access)
-  - `run-once.js` - Full pipeline with SERP + LLM (requires API keys)
+  - `seed-originals.ts` - Scrapes BeyondChats.com (requires network access)
+  - `run-once.ts` - Full pipeline with SERP + LLM (requires API keys)
 - [x] All service modules functional:
-  - `laravelApi.js` - API client with retry logic
-  - `scrape.js` - Article extraction using @extractus/article-extractor
-  - `serpapi.js` - Google search integration
-  - `llm.js` - OpenAI integration for article rewriting
+  - `laravelApi.ts` - API client with retry logic
+  - `scrape.ts` - Article extraction using @extractus/article-extractor
+  - `serpapi.ts` - Google search integration
+  - `llm.ts` - OpenAI/Gemini integration for article rewriting
 - [x] Complete workflow verified: fetch original → create updated → publish
 
 ### ✅ Frontend (React + Vite)
@@ -176,9 +176,9 @@ open http://localhost:5173                        # ✅ UI displays correctly
 **Issue**: Some environments block access to beyondchats.com, SerpAPI, and OpenAI.
 
 **Solution**: 
-- Created `seed-local.js` with sample articles for offline testing
-- Created `run-mock.js` for pipeline testing without external APIs
-- Production scripts (`seed-originals.js`, `run-once.js`) work when network access is available
+- Created `seed-local.ts` with sample articles for offline testing
+- Created `run-mock.ts` for pipeline testing without external APIs
+- Production scripts (`seed-originals.ts`, `run-once.ts`) work when network access is available
 
 ### 2. PHP Version Compatibility
 **Issue**: Original composer.lock required PHP 8.4, but most systems have PHP 8.3.

@@ -123,24 +123,24 @@ article_scraper/
 ├── pipeline/                  # Node.js content pipeline
 │   ├── src/
 │   │   ├── services/         # External API integrations
-│   │   │   ├── laravelApi.js    # Backend API client
-│   │   │   ├── llm.js           # OpenAI/Gemini integration
-│   │   │   ├── scrape.js        # Article extraction
-│   │   │   └── serpapi.js       # Google search
+│   │   │   ├── laravelApi.ts    # Backend API client
+│   │   │   ├── llm.ts           # OpenAI/Gemini integration
+│   │   │   ├── scrape.ts        # Article extraction
+│   │   │   └── serpapi.ts       # Google search
 │   │   ├── utils/            # Shared utilities (NEW)
-│   │   │   ├── env.js           # Environment helpers
-│   │   │   └── html.js          # HTML formatting
-│   │   ├── run-once.js       # Main pipeline script
-│   │   ├── run-mock.js       # Mock pipeline (no APIs)
-│   │   ├── seed-local.js     # Seed sample data
-│   │   └── seed-originals.js # Scrape BeyondChats articles
+│   │   │   ├── env.ts           # Environment helpers
+│   │   │   └── html.ts          # HTML formatting
+│   │   ├── run-once.ts       # Main pipeline script
+│   │   ├── run-mock.ts       # Mock pipeline (no APIs)
+│   │   ├── seed-local.ts     # Seed sample data
+│   │   └── seed-originals.ts # Scrape BeyondChats articles
 │   └── package.json          # Node.js dependencies
 │
 ├── frontend/                  # React UI
 │   ├── src/
-│   │   ├── App.jsx           # Main application component
-│   │   ├── api.js            # Backend API client
-│   │   ├── main.jsx          # Entry point
+│   │   ├── App.tsx          # Main application component
+│   │   ├── api.ts           # Backend API client
+│   │   ├── main.tsx         # Entry point
 │   │   ├── App.css           # Application styles
 │   │   └── index.css         # Global styles
 │   ├── index.html            # HTML template
@@ -291,7 +291,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 
 ### Utilities (Shared Code)
 
-#### `utils/env.js`
+#### `utils/env.ts`
 
 **Purpose**: Centralized environment variable handling
 
@@ -313,7 +313,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
    - **Returns**: Number (default: 12000, min: 100)
    - **Usage**: Limits competitor article text sent to LLM
 
-#### `utils/html.js`
+#### `utils/html.ts`
 
 **Purpose**: HTML formatting utilities
 
@@ -335,7 +335,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 
 ### Services
 
-#### `services/laravelApi.js`
+#### `services/laravelApi.ts`
 
 **Purpose**: Client for communicating with Laravel backend
 
@@ -363,7 +363,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 - Retries on timeout errors
 - Default: 2 retries, 120s timeout
 
-#### `services/serpapi.js`
+#### `services/serpapi.ts`
 
 **Purpose**: Google search integration via SerpAPI
 
@@ -384,7 +384,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 - `isDisallowedDomain(url)`: Filters out blocked domains
 - `looksLikeArticle(url)`: Validates URL structure
 
-#### `services/scrape.js`
+#### `services/scrape.ts`
 
 **Purpose**: Extract article content from web pages
 
@@ -402,7 +402,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 2. If empty, convert HTML to plain text
 3. If still empty, fetch directly and parse
 
-#### `services/llm.js`
+#### `services/llm.ts`
 
 **Purpose**: AI-powered article rewriting using LLM APIs
 
@@ -437,7 +437,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 
 ### Scripts
 
-#### `run-once.js`
+#### `run-once.ts`
 
 **Purpose**: Main pipeline - processes one or more original articles
 
@@ -474,7 +474,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 - Continues to next article if one fails
 - Exits with code 1 if any failures occur
 
-#### `run-mock.js`
+#### `run-mock.ts`
 
 **Purpose**: Mock pipeline for testing without external APIs
 
@@ -490,7 +490,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 
 **Use Case**: Testing/development without SerpAPI or LLM API keys
 
-#### `seed-local.js`
+#### `seed-local.ts`
 
 **Purpose**: Seed database with sample articles for testing
 
@@ -506,7 +506,7 @@ The pipeline is a collection of Node.js scripts that automate the content workfl
 
 **Use Case**: Quick local setup without external API calls
 
-#### `seed-originals.js`
+#### `seed-originals.ts`
 
 **Purpose**: Scrape real articles from BeyondChats.com and seed them
 
@@ -546,24 +546,24 @@ The frontend is a React 19 application built with Vite. It provides a clean UI t
 
 ### Components
 
-#### `main.jsx`
+#### `main.tsx`
 
 **Purpose**: Application entry point
 
 **Code**:
-```javascript
+```typescript
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import App from './App.jsx'
+import App from './App.tsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+   <StrictMode>
+      <App />
+   </StrictMode>,
 )
 ```
 
-#### `App.jsx`
+#### `App.tsx`
 
 **Purpose**: Main application component - manages state and renders UI
 
@@ -626,7 +626,7 @@ createRoot(document.getElementById('root')).render(
 - Handles missing data gracefully
 - Displays metadata (ID, source URL, created dates)
 
-#### `api.js`
+#### `api.ts`
 
 **Purpose**: Backend API client
 
@@ -664,13 +664,13 @@ createRoot(document.getElementById('root')).render(
 ### Complete Pipeline Flow
 
 ```
-1. SEED ORIGINALS (seed-originals.js or seed-local.js)
+1. SEED ORIGINALS (seed-originals.ts or seed-local.ts)
    ├─> Scrape BeyondChats.com OR use hardcoded samples
    ├─> Extract title, content, source URL
    └─> POST /api/articles (type='original')
         └─> Stored in database
 
-2. PIPELINE EXECUTION (run-once.js, triggered by GitHub Actions)
+2. PIPELINE EXECUTION (run-once.ts, triggered by GitHub Actions)
    ├─> GET /api/articles/latest-original-needing-update
    │    └─> Returns oldest original without updates
    │
@@ -690,7 +690,7 @@ createRoot(document.getElementById('root')).render(
    └─> POST /api/articles (type='updated', parent_id=original.id)
         └─> Stored in database with references
 
-3. FRONTEND DISPLAY (App.jsx)
+3. FRONTEND DISPLAY (App.tsx)
    ├─> GET /api/articles?type=original&per_page=20
    │    └─> Load sidebar list (with updates_count)
    │
@@ -780,11 +780,11 @@ createRoot(document.getElementById('root')).render(
 - `rewriteWithLlm({...})` - LLM rewrite
 
 #### Scripts
-- `run-once.js::pickAndScrapeTwoCompetitors(query)` - Get 2 scraped competitors
-- `seed-originals.js::fetchHtml(url)` - Fetch raw HTML
-- `seed-originals.js::discoverLastPageUrl(base, html)` - Find last page
-- `seed-originals.js::extractArticleUrls(page, html)` - Parse links
-- `seed-originals.js::resetAllArticles()` - Delete all (RESET_SEED)
+- `run-once.ts::pickAndScrapeTwoCompetitors(query)` - Get 2 scraped competitors
+- `seed-originals.ts::fetchHtml(url)` - Fetch raw HTML
+- `seed-originals.ts::discoverLastPageUrl(base, html)` - Find last page
+- `seed-originals.ts::extractArticleUrls(page, html)` - Parse links
+- `seed-originals.ts::resetAllArticles()` - Delete all (RESET_SEED)
 
 ### Frontend Functions
 
@@ -863,12 +863,12 @@ createRoot(document.getElementById('root')).render(
 
 ### Code Reduction
 1. **Eliminated duplicate `requireEnv` function** - Saved ~40 lines
-   - Was in: run-once.js, run-mock.js, seed-local.js, seed-originals.js, llm.js
-   - Now in: utils/env.js (single source of truth)
+   - Was in: run-once.ts, run-mock.ts, seed-local.ts, seed-originals.ts, llm.ts
+   - Now in: utils/env.ts (single source of truth)
 
 2. **Consolidated citation HTML generation** - Saved ~20 lines
-   - Was duplicated in: run-once.js, run-mock.js
-   - Now in: utils/html.js
+   - Was duplicated in: run-once.ts, run-mock.ts
+   - Now in: utils/html.ts
 
 3. **Created shared configuration helpers** - Improved maintainability
    - `parseMaxUpdatesPerRun()` and `parseMaxCompetitorChars()`

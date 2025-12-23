@@ -1,7 +1,11 @@
 import type { Article, OriginalArticlePayload, UpdatedArticlePayload } from '../types/index.js';
 
 function apiBaseUrl(): string {
-  return (process.env.API_BASE_URL ?? '').replace(/\/$/, '');
+  const base = (process.env.API_BASE_URL ?? '').replace(/\/$/, '');
+  if (!base) {
+    throw new Error('API_BASE_URL is empty');
+  }
+  return base;
 }
 
 interface FetchOptions extends RequestInit {
@@ -20,10 +24,9 @@ async function fetchWithRetry(
 ): Promise<Response> {
   let lastError: Error | undefined;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
-    const attemptTimeoutMs = timeoutMs;
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
       try {
         return await fetch(url, { ...options, signal: controller.signal });
       } finally {
@@ -51,19 +54,15 @@ async function fetchWithRetry(
 async function requestJson<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const url = `${apiBaseUrl()}${path}`;
 
-  if (!apiBaseUrl()) {
-    throw new Error('API_BASE_URL is empty');
-  }
-
   const response = await fetchWithRetry(
     url,
     {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...(options.headers ?? {}),
-    },
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(options.headers ?? {}),
+      },
     },
     { retries: 2, timeoutMs: 120_000 }
   );

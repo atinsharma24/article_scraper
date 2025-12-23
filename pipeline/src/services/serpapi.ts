@@ -1,4 +1,5 @@
 import type { SerpApiResponse, CompetitorData } from '../types/index.js';
+import { requireEnv } from '../utils/env.js';
 
 function isDisallowedDomain(url: string): boolean {
   try {
@@ -62,11 +63,11 @@ export async function googleTopCompetitors(
   query: string,
   { limit = 10 }: GoogleTopCompetitorsOptions = {}
 ): Promise<CompetitorData[]> {
-  const apiKey = process.env.SERPAPI_API_KEY;
+  const apiKey = requireEnv('SERPAPI_API_KEY');
   const url = new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine', 'google');
   url.searchParams.set('q', query);
-  url.searchParams.set('api_key', apiKey!);
+  url.searchParams.set('api_key', apiKey);
 
   const wanted = Math.max(2, Number(limit) || 10);
   const fetchNum = Math.max(10, Math.min(30, wanted));

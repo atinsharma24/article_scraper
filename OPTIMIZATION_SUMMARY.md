@@ -25,10 +25,10 @@ This optimization effort successfully reduced code redundancy, created comprehen
 ```
 pipeline/src/
 ├── utils/
-│   ├── env.js       ← Environment variable handling (NEW)
-│   └── html.js      ← HTML formatting utilities (NEW)
+│   ├── env.ts       ← Environment variable handling (NEW)
+│   └── html.ts      ← HTML formatting utilities (NEW)
 ├── services/        ← Updated to use shared utilities
-└── *.js scripts     ← Updated to use shared utilities
+└── *.ts scripts     ← Updated to use shared utilities
 ```
 
 **Impact:**
@@ -161,15 +161,15 @@ Created two major documentation files:
 ## Files Modified/Created
 
 ### Modified Files (5):
-1. `pipeline/src/run-once.js` - Uses shared utilities
-2. `pipeline/src/run-mock.js` - Uses shared utilities
-3. `pipeline/src/seed-local.js` - Uses shared utilities
-4. `pipeline/src/seed-originals.js` - Uses shared utilities
-5. `pipeline/src/services/llm.js` - Uses shared requireEnv
+1. `pipeline/src/run-once.ts` - Uses shared utilities
+2. `pipeline/src/run-mock.ts` - Uses shared utilities
+3. `pipeline/src/seed-local.ts` - Uses shared utilities
+4. `pipeline/src/seed-originals.ts` - Uses shared utilities
+5. `pipeline/src/services/llm.ts` - Uses shared requireEnv
 
 ### Created Files (4):
-1. `pipeline/src/utils/env.js` - Shared environment utilities
-2. `pipeline/src/utils/html.js` - Shared HTML utilities
+1. `pipeline/src/utils/env.ts` - Shared environment utilities
+2. `pipeline/src/utils/html.ts` - Shared HTML utilities
 3. `CODEBASE_DOCUMENTATION.md` - Complete technical documentation
 4. `TYPESCRIPT_MIGRATION_ANALYSIS.md` - TypeScript migration analysis
 

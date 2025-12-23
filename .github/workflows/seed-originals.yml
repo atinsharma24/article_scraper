@@ -10,7 +10,7 @@ on:
       api_base_url:
         description: "Backend API base URL (defaults to Render)"
         required: false
-        default: "https://content-pipeline-ruor.onrender.com"
+        default: "https://your-app.onrender.com"
       count:
         description: "Number of original BeyondChats posts to ingest"
         required: false

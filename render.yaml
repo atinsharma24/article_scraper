@@ -1,8 +1,7 @@
 # Render Blueprint
-# This file defines:
-# - A Laravel web service (backend)
-# - A Node cron job (pipeline)
+# This file defines a Laravel web service (backend).
 #
+# Pipeline runs via GitHub Actions (Render cron jobs require paid plans).
 # Fill in env vars in Render dashboard or add `envVars` entries here.
 
 services:

@@ -16,12 +16,22 @@ export interface Article {
   updated_at: string;
 }
 
-export interface ArticleListResponse {
-  data: Article[];
+export interface ArticleIndexItem extends Article {
+  updates_count?: number;
 }
 
-export interface ArticleDetailResponse {
-  data: Article;
+export interface ArticleWithUpdates extends Article {
+  updates?: Article[];
+}
+
+// Laravel pagination response (we only rely on `data`, but keep common fields for correctness)
+export interface Paginated<T> {
+  data: T[];
+  current_page?: number;
+  per_page?: number;
+  total?: number;
+  next_page_url?: string | null;
+  prev_page_url?: string | null;
 }
 
 export interface ListArticlesOptions {

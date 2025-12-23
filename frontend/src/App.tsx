@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getArticle, listArticles } from './api';
 import './App.css';
-import type { Article } from './types';
-
-interface ArticleWithUpdates extends Article {
-  updates?: Article[];
-  updates_count?: number;
-}
+import type { Article, ArticleIndexItem, ArticleWithUpdates } from './types';
 
 function fmtDate(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -18,17 +13,27 @@ function fmtDate(value: string | null | undefined): string | null {
 function pickLatestUpdate(updates: Article[] | undefined): Article | null {
   const arr = Array.isArray(updates) ? updates : [];
   if (arr.length === 0) return null;
-  return [...arr].sort((a, b) => {
-    const ta = new Date(a?.created_at ?? 0).getTime();
-    const tb = new Date(b?.created_at ?? 0).getTime();
-    return tb - ta;
-  })[0];
+
+  let best: Article = arr[0];
+  let bestTime = new Date(best.created_at).getTime();
+  if (!Number.isFinite(bestTime)) bestTime = 0;
+
+  for (const item of arr.slice(1)) {
+    let t = new Date(item.created_at).getTime();
+    if (!Number.isFinite(t)) t = 0;
+    if (t > bestTime) {
+      best = item;
+      bestTime = t;
+    }
+  }
+
+  return best;
 }
 
 function App() {
   const apiBaseUrl = useMemo(() => import.meta.env.VITE_API_BASE_URL, []);
 
-  const [originals, setOriginals] = useState<ArticleWithUpdates[]>([]);
+  const [originals, setOriginals] = useState<ArticleIndexItem[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedOriginal, setSelectedOriginal] = useState<ArticleWithUpdates | null>(null);
   const [updates, setUpdates] = useState<Article[]>([]);
@@ -69,9 +74,8 @@ function App() {
         setError(null);
         const result = await getArticle(selectedId);
         if (cancelled) return;
-        const original = (result?.data ?? result) as ArticleWithUpdates;
-        setSelectedOriginal(original);
-        setUpdates(original?.updates ?? []);
+        setSelectedOriginal(result);
+        setUpdates(result.updates ?? []);
       } catch (e) {
         if (!cancelled) setError((e as Error)?.message ?? String(e));
       }
@@ -179,21 +183,6 @@ function App() {
                       className="articleBody"
                       dangerouslySetInnerHTML={{ __html: latestUpdate.content }}
                     />
-
-                    {Array.isArray(latestUpdate.references) && latestUpdate.references.length > 0 ? (
-                      <div className="refs">
-                        <div className="refsTitle">References</div>
-                        <ul className="refsList">
-                          {latestUpdate.references.map((r, idx) => (
-                            <li key={idx}>
-                              <a href={r.url} target="_blank" rel="noreferrer">
-                                {r.title || r.url}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
                   </>
                 )}
               </article>
