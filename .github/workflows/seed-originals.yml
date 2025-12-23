@@ -41,12 +41,9 @@ jobs:
           set -euo pipefail
           API_BASE_URL_INPUT='${{ inputs.api_base_url }}'
           API_BASE_URL_SECRET='${{ secrets.API_BASE_URL }}'
-          API_BASE_URL="$API_BASE_URL_INPUT"
-          if [ "$API_BASE_URL" = "https://your-app.onrender.com" ]; then
-            API_BASE_URL=""
-          fi
-          if [ -z "$API_BASE_URL" ]; then
-            API_BASE_URL="$API_BASE_URL_SECRET"
+          API_BASE_URL="$API_BASE_URL_SECRET"
+          if [ -n "$API_BASE_URL_INPUT" ] && [ "$API_BASE_URL_INPUT" != "https://your-app.onrender.com" ]; then
+            API_BASE_URL="$API_BASE_URL_INPUT"
           fi
           API_BASE_URL="${API_BASE_URL%/}"
           if [ -z "$API_BASE_URL" ]; then
