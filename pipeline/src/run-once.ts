@@ -14,38 +14,71 @@ interface ScrapedCompetitor {
 	text: string;
 }
 
-async function pickAndScrapeTwoCompetitors(query: string): Promise<ScrapedCompetitor[]> {
-	const candidates = await googleTopCompetitors(query, { limit: 20 });
-	if (candidates.length < 2) {
-		throw new Error(`Expected at least 2 competitor URLs, got ${candidates.length}`);
-	}
+function normalizeQuery(title: string): string {
+	const raw = String(title || '').trim();
+	// Remove common site suffixes like " - Beyondchats" / "| BeyondChats".
+	return raw
+		.replace(/\s*[-|–—]\s*beyond\s*chats\s*$/i, '')
+		.replace(/\s*[-|–—]\s*beyondchats\s*$/i, '')
+		.replace(/\s*\(\s*beyond\s*chats\s*\)\s*$/i, '')
+		.replace(/\s*\(\s*beyondchats\s*\)\s*$/i, '')
+		.trim();
+}
 
+function buildSearchQueries(originalTitle: string): string[] {
+	const base = String(originalTitle || '').trim();
+	const normalized = normalizeQuery(base);
+	const queries = [base, normalized, `${normalized} article`, `${normalized} blog`]
+		.map((q) => q.trim())
+		.filter(Boolean);
+	// Dedupe while preserving order.
+	return Array.from(new Set(queries));
+}
+
+async function pickAndScrapeTwoCompetitors(originalTitle: string): Promise<ScrapedCompetitor[]> {
+	const queries = buildSearchQueries(originalTitle);
 	const chosen: ScrapedCompetitor[] = [];
-	for (const c of candidates) {
+	const seenUrls = new Set<string>();
+
+	for (const query of queries) {
 		if (chosen.length >= 2) break;
-		try {
-			const extracted = await extractMainArticle(c.url);
-			const text = (extracted.text || '').trim();
-			if (!text) {
-				throw new Error('Empty extracted text');
+		console.log(`Searching competitors for query: ${query}`);
+
+		// Ask for a larger candidate pool; scraping will filter further.
+		const candidates = await googleTopCompetitors(query, { limit: 50 });
+		for (const c of candidates) {
+			if (chosen.length >= 2) break;
+			if (!c?.url || seenUrls.has(c.url)) continue;
+			seenUrls.add(c.url);
+
+			try {
+				const extracted = await extractMainArticle(c.url);
+				const text = (extracted.text || '').trim();
+				if (!text) {
+					throw new Error('Empty extracted text');
+				}
+				console.log(`Picked competitor: ${c.url}`);
+				chosen.push({
+					url: c.url,
+					serpTitle: c.title ?? null,
+					extractedTitle: extracted.title ?? null,
+					text,
+				});
+			} catch (err) {
+				const msg = String((err as any)?.message ?? err);
+				console.log(`Skip competitor (scrape failed): ${c.url} :: ${msg}`);
+				continue;
 			}
-			console.log(`Picked competitor: ${c.url}`);
-			chosen.push({
-				url: c.url,
-				serpTitle: c.title ?? null,
-				extractedTitle: extracted.title ?? null,
-				text,
-			});
-		} catch (err) {
-			const msg = String((err as any)?.message ?? err);
-			console.log(`Skip competitor (scrape failed): ${c.url} :: ${msg}`);
-			continue;
 		}
 	}
 
-	if (chosen.length < 2) {
+	// We prefer 2 competitors, but some queries/topics may legitimately only yield 1
+	// usable result after filtering + scraping. In that case, continue with 1 competitor
+	// and let the LLM prompt reflect the missing reference.
+	if (chosen.length < 1) {
 		throw new Error(
-			`Could not scrape 2 competitor articles (scraped=${chosen.length}). Try again later or reduce blocked domains by adjusting SerpAPI results.`
+			`Could not scrape any competitor article (scraped=${chosen.length}). ` +
+			`Tried queries: ${queries.join(' | ')}`
 		);
 	}
 
@@ -77,26 +110,37 @@ async function main(): Promise<void> {
 		try {
 			const competitors = await pickAndScrapeTwoCompetitors(original.title);
 			console.log('Competitor URLs:', competitors.map((c) => c.url).join(' | '));
+			if (competitors.length < 2) {
+				console.log('Warning: Only 1 competitor scraped; proceeding with a single reference.');
+			}
+
+			const competitorA = competitors[0];
+			const competitorB = competitors[1] ?? {
+				url: '',
+				serpTitle: null,
+				extractedTitle: null,
+				text: '',
+			};
 
 			const rewritten = await rewriteWithLlm({
 				originalTitle: original.title,
 				originalHtml: original.content,
 				competitorA: {
-					url: competitors[0].url,
-					title: competitors[0].extractedTitle ?? competitors[0].serpTitle ?? null,
-					text: competitors[0].text.slice(0, maxChars),
+					url: competitorA.url,
+					title: competitorA.extractedTitle ?? competitorA.serpTitle ?? null,
+					text: competitorA.text.slice(0, maxChars),
 				},
 				competitorB: {
-					url: competitors[1].url,
-					title: competitors[1].extractedTitle ?? competitors[1].serpTitle ?? null,
-					text: competitors[1].text.slice(0, maxChars),
+					url: competitorB.url,
+					title: competitorB.extractedTitle ?? competitorB.serpTitle ?? null,
+					text: competitorB.text.slice(0, maxChars),
 				},
 			});
 
-			const references = [
-				{ url: competitors[0].url, title: competitors[0].serpTitle ?? competitors[0].extractedTitle ?? null },
-				{ url: competitors[1].url, title: competitors[1].serpTitle ?? competitors[1].extractedTitle ?? null },
-			];
+			const references = competitors.map((c) => ({
+				url: c.url,
+				title: c.serpTitle ?? c.extractedTitle ?? null,
+			}));
 
 			const citationsHtml = generateCitationsHtml(references);
 
@@ -121,7 +165,8 @@ async function main(): Promise<void> {
 	}
 
 	console.log(`Done. ok=${ok} failed=${failed}`);
-	if (failed > 0) process.exit(1);
+	// Fail the run only if nothing could be processed successfully.
+	if (ok === 0 && failed > 0) process.exit(1);
 }
 
 main().catch((err) => {
