@@ -7,8 +7,8 @@ A full-stack content pipeline application that scrapes original articles, rewrit
 ## Stack
 - **Database**: Supabase Postgres (production) / SQLite (local development)
 - **Backend API**: Laravel 12 (PHP 8.3+)
-- **Pipeline**: Node.js scripts (SERP + scrape + LLM + publish)
-- **Frontend**: React 19 + Vite
+- **Pipeline**: TypeScript + Node.js scripts (SERP + scrape + LLM + publish)
+- **Frontend**: React 19 + TypeScript + Vite
 - **Deployment**: Render (backend), Vercel (frontend), GitHub Actions (pipeline)
 - **External APIs**: SerpAPI (search), OpenAI or Gemini (LLM rewriting)
 
@@ -16,8 +16,8 @@ A full-stack content pipeline application that scrapes original articles, rewrit
 ```
 .
 ├── backend/          Laravel API (CRUD + database)
-├── pipeline/         Node.js scripts (seeding, pipeline)
-├── frontend/         React UI (Vite)
+├── pipeline/         TypeScript scripts (seeding, pipeline)
+├── frontend/         React + TypeScript UI (Vite)
 ├── docs/            Documentation (architecture, data flow, deployment)
 ├── diagrams/        Architecture/workflow diagrams (SVG/PNG)
 └── .github/         GitHub Actions workflows
