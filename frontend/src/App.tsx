@@ -1,81 +1,88 @@
-import { useEffect, useMemo, useState } from 'react'
-import { getArticle, listArticles } from './api'
-import './App.css'
+import { useEffect, useMemo, useState } from 'react';
+import { getArticle, listArticles } from './api';
+import './App.css';
+import type { Article } from './types';
 
-function fmtDate(value) {
-  if (!value) return null
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString()
+interface ArticleWithUpdates extends Article {
+  updates?: Article[];
+  updates_count?: number;
 }
 
-function pickLatestUpdate(updates) {
-  const arr = Array.isArray(updates) ? updates : []
-  if (arr.length === 0) return null
+function fmtDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleString();
+}
+
+function pickLatestUpdate(updates: Article[] | undefined): Article | null {
+  const arr = Array.isArray(updates) ? updates : [];
+  if (arr.length === 0) return null;
   return [...arr].sort((a, b) => {
-    const ta = new Date(a?.created_at ?? 0).getTime()
-    const tb = new Date(b?.created_at ?? 0).getTime()
-    return tb - ta
-  })[0]
+    const ta = new Date(a?.created_at ?? 0).getTime();
+    const tb = new Date(b?.created_at ?? 0).getTime();
+    return tb - ta;
+  })[0];
 }
 
 function App() {
-  const apiBaseUrl = useMemo(() => import.meta.env.VITE_API_BASE_URL, [])
+  const apiBaseUrl = useMemo(() => import.meta.env.VITE_API_BASE_URL, []);
 
-  const [originals, setOriginals] = useState([])
-  const [selectedId, setSelectedId] = useState(null)
-  const [selectedOriginal, setSelectedOriginal] = useState(null)
-  const [updates, setUpdates] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [originals, setOriginals] = useState<ArticleWithUpdates[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedOriginal, setSelectedOriginal] = useState<ArticleWithUpdates | null>(null);
+  const [updates, setUpdates] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     async function load() {
       try {
-        setLoading(true)
-        setError(null)
-        const page = await listArticles({ type: 'original', perPage: 20 })
-        const items = page?.data ?? []
-        if (cancelled) return
-        setOriginals(items)
+        setLoading(true);
+        setError(null);
+        const page = await listArticles({ type: 'original', perPage: 20 });
+        const items = page?.data ?? [];
+        if (cancelled) return;
+        setOriginals(items);
         if (items.length > 0) {
-          const firstWithUpdate = items.find((a) => (a?.updates_count ?? 0) > 0)
-          setSelectedId((firstWithUpdate ?? items[0]).id)
+          const firstWithUpdate = items.find((a) => (a?.updates_count ?? 0) > 0);
+          setSelectedId((firstWithUpdate ?? items[0]).id);
         }
       } catch (e) {
-        if (!cancelled) setError(e?.message ?? String(e))
+        if (!cancelled) setError((e as Error)?.message ?? String(e));
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setLoading(false);
       }
     }
-    load()
+    load();
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     async function loadDetail() {
-      if (!selectedId) return
+      if (!selectedId) return;
       try {
-        setError(null)
-        const original = await getArticle(selectedId)
-        if (cancelled) return
-        setSelectedOriginal(original)
-        setUpdates(original?.updates ?? [])
+        setError(null);
+        const result = await getArticle(selectedId);
+        if (cancelled) return;
+        const original = (result?.data ?? result) as ArticleWithUpdates;
+        setSelectedOriginal(original);
+        setUpdates(original?.updates ?? []);
       } catch (e) {
-        if (!cancelled) setError(e?.message ?? String(e))
+        if (!cancelled) setError((e as Error)?.message ?? String(e));
       }
     }
-    loadDetail()
+    loadDetail();
     return () => {
-      cancelled = true
-    }
-  }, [selectedId])
+      cancelled = true;
+    };
+  }, [selectedId]);
 
-  const latestUpdate = useMemo(() => pickLatestUpdate(updates), [updates])
+  const latestUpdate = useMemo(() => pickLatestUpdate(updates), [updates]);
 
   return (
     <div className="layout">
@@ -195,7 +202,7 @@ function App() {
         </section>
       </main>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
