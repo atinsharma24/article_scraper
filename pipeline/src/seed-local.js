@@ -1,13 +1,6 @@
 import 'dotenv/config';
 import { publishOriginalArticle } from './services/laravelApi.js';
-
-function requireEnv(name) {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing required env var: ${name}`);
-	}
-	return value;
-}
+import { requireEnv } from './utils/env.js';
 
 // Sample articles to seed the database for testing
 const sampleArticles = [
