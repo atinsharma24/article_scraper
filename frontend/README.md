@@ -2,6 +2,9 @@
 
 This is the frontend application for BeyondChats article viewer, built with React 19, TypeScript, and Vite.
 
+For end-to-end setup (including backend + pipeline), see the repo root README:
+- ../README.md
+
 ## TypeScript Migration
 
 The frontend has been fully migrated to TypeScript, providing:

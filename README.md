@@ -174,7 +174,7 @@ You can use Gemini (default) or OpenAI by setting `LLM_PROVIDER`.
    FRONTEND_URL=https://your-vercel-app.vercel.app
    ```
 
-3. **Migrations run automatically** on each deployment (see `render-start.sh`)
+3. **Migrations run automatically** on each deployment (see `backend/render-start.sh`)
 
 ### Frontend (Vercel)
 
