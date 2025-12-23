@@ -2,9 +2,15 @@ import 'dotenv/config';
 import { fetchLatestOriginalNeedingUpdate, publishUpdatedArticle } from './services/laravelApi.js';
 import { requireEnv } from './utils/env.js';
 import { generateCitationsHtml } from './utils/html.js';
+import type { Reference } from './types/index.js';
 
-// Mock competitor references for testing without external APIs
-const mockCompetitors = [
+interface MockCompetitor {
+	url: string;
+	title: string;
+	text: string;
+}
+
+const mockCompetitors: MockCompetitor[] = [
 	{
 		url: 'https://example.com/article-1',
 		title: 'Competitor Article 1',
@@ -17,8 +23,7 @@ const mockCompetitors = [
 	},
 ];
 
-// Mock LLM rewrite for testing without LLM API
-function mockRewrite(originalTitle, originalHtml) {
+function mockRewrite(originalTitle: string, originalHtml: string): { title: string; html: string } {
 	const improvedHtml = originalHtml
 		.replace(/<h1>/g, '<h1 style="color: #2563eb;">')
 		.replace(/<h2>/g, '<h2 style="color: #3b82f6;">');
@@ -33,7 +38,7 @@ ${improvedHtml}
 	};
 }
 
-async function main() {
+async function main(): Promise<void> {
 	requireEnv('API_BASE_URL');
 
 	console.log('Running mock pipeline (for testing without external APIs)...\n');
@@ -56,7 +61,7 @@ async function main() {
 	console.log('Rewriting article with mock LLM...');
 	const rewritten = mockRewrite(original.title, original.content);
 
-	const references = [
+	const references: Reference[] = [
 		{ url: mockCompetitors[0].url, title: mockCompetitors[0].title },
 		{ url: mockCompetitors[1].url, title: mockCompetitors[1].title },
 	];
@@ -64,7 +69,7 @@ async function main() {
 	const citationsHtml = generateCitationsHtml(references);
 
 	const updatedPayload = {
-		type: 'updated',
+		type: 'updated' as const,
 		parent_id: original.id,
 		title: rewritten.title ?? original.title,
 		content: `${rewritten.html}\n${citationsHtml}`,
@@ -84,6 +89,6 @@ async function main() {
 }
 
 main().catch((err) => {
-	console.error('Error:', err?.message ?? err);
+	console.error('Error:', (err as any)?.message ?? err);
 	process.exit(1);
 });

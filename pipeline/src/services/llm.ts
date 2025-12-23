@@ -1,14 +1,22 @@
 import { htmlToText } from 'html-to-text';
 import { marked } from 'marked';
 import { requireEnv } from '../utils/env.js';
+import type { LLMProvider, RewriteParams, RewriteResult, OpenAIResponse, GeminiResponse } from '../types/index.js';
 
-function getProvider() {
+function getProvider(): LLMProvider {
   const raw = (process.env.LLM_PROVIDER || 'gemini').trim().toLowerCase();
   if (raw === 'openai' || raw === 'gemini') return raw;
   throw new Error(`Unsupported LLM_PROVIDER: ${raw} (expected: openai|gemini)`);
 }
 
-async function rewriteWithOpenAi({ apiKey, model, system, user }) {
+interface LLMRequestParams {
+  apiKey: string;
+  model: string;
+  system: string;
+  user: string;
+}
+
+async function rewriteWithOpenAi({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: null; markdown: string }> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -27,7 +35,7 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
 
   if (!response.ok) {
     const raw = await response.text().catch(() => '');
-    let parsed;
+    let parsed: any;
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -38,7 +46,7 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
     const apiCode = parsed?.error?.code;
     const apiType = parsed?.error?.type;
 
-    const err = new Error(`LLM error: HTTP ${response.status}: ${apiMessage ?? raw}`);
+    const err = new Error(`LLM error: HTTP ${response.status}: ${apiMessage ?? raw}`) as any;
     err.status = response.status;
     err.code = apiCode ?? apiType ?? null;
 
@@ -51,7 +59,7 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
     throw err;
   }
 
-  const data = await response.json();
+  const data = await response.json() as OpenAIResponse;
   const markdown = data?.choices?.[0]?.message?.content;
 
   if (!markdown || typeof markdown !== 'string') {
@@ -61,9 +69,7 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }) {
   return { title: null, markdown };
 }
 
-async function rewriteWithGemini({ apiKey, model, system, user }) {
-  // Google AI Studio (Generative Language) API.
-  // Docs: https://ai.google.dev/
+async function rewriteWithGemini({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: null; markdown: string }> {
   const normalizedModel = String(model || '').startsWith('models/')
     ? String(model).slice('models/'.length)
     : String(model || '');
@@ -93,7 +99,7 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
 
   if (!response.ok) {
     const raw = await response.text().catch(() => '');
-    let parsed;
+    let parsed: any;
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -103,11 +109,10 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
     const apiMessage = parsed?.error?.message;
     const apiStatus = parsed?.error?.status;
 
-    const err = new Error(`LLM error: HTTP ${response.status}: ${apiMessage ?? raw}`);
+    const err = new Error(`LLM error: HTTP ${response.status}: ${apiMessage ?? raw}`) as any;
     err.status = response.status;
     err.code = apiStatus ?? null;
 
-    // Gemini quota / billing / rate limit errors usually show up as HTTP 429.
     if (response.status === 429) {
       err.message =
         'Gemini quota/rate-limit reached (HTTP 429). Check your Google AI Studio quota/billing, or rotate to an API key with available quota, then re-run the pipeline.';
@@ -124,7 +129,7 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
     throw err;
   }
 
-  const data = await response.json();
+  const data = await response.json() as GeminiResponse;
   const markdown = data?.candidates?.[0]?.content?.parts
     ?.map((p) => p?.text)
     .filter(Boolean)
@@ -137,7 +142,7 @@ async function rewriteWithGemini({ apiKey, model, system, user }) {
   return { title: null, markdown };
 }
 
-export async function rewriteWithLlm({ originalTitle, originalHtml, competitorA, competitorB }) {
+export async function rewriteWithLlm({ originalHtml, competitorA, competitorB }: RewriteParams): Promise<RewriteResult> {
   const apiKey = requireEnv('LLM_API_KEY');
   const provider = getProvider();
   const model =
@@ -197,7 +202,7 @@ similar in quality to top Google results.
 Do not copy wording or structure.
 Output markdown only.`;
 
-  let result;
+  let result: { title: null; markdown: string };
 
   if (provider === 'gemini') {
     result = await rewriteWithGemini({ apiKey, model, system, user });
@@ -210,8 +215,7 @@ Output markdown only.`;
     throw new Error('LLM returned empty content');
   }
 
-  // Store/render as HTML in the app, while forcing the model output to be Markdown.
-  const html = marked.parse(markdown);
+  const html = marked.parse(markdown) as string;
 
   return { title: result?.title ?? null, html };
 }

@@ -1,9 +1,9 @@
 import { extract } from '@extractus/article-extractor';
 import { htmlToText } from 'html-to-text';
+import type { ExtractionResult } from '../types/index.js';
 
-function headers() {
+function headers(): Record<string, string> {
   return {
-    // Many sites block “unknown” clients; using a mainstream UA helps.
     'user-agent':
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     accept:
@@ -14,33 +14,31 @@ function headers() {
   };
 }
 
-function htmlToPlainText(html) {
+function htmlToPlainText(html: string): string {
   return htmlToText(html, {
     wordwrap: false,
     selectors: [{ selector: 'a', options: { ignoreHref: true } }],
   });
 }
 
-function parseTitleFromHtml(html) {
+function parseTitleFromHtml(html: string): string | null {
   const m = String(html || '').match(/<title[^>]*>([^<]+)<\/title>/i);
   return m?.[1]?.trim() || null;
 }
 
-export async function extractMainArticle(url) {
-  const result = await extract(url, {}, { headers: headers() });
+export async function extractMainArticle(url: string): Promise<ExtractionResult> {
+  const result = await extract(url, {}, { headers: headers() }) as any;
   const html = result?.content ?? '';
 
   let title = result?.title ?? null;
   let text = typeof result?.text === 'string' ? result.text : '';
 
-  // Some sites return empty strings; treat that as empty and fall back.
   if (!text || !text.trim()) {
     if (html && String(html).trim()) {
       text = htmlToPlainText(html);
     }
   }
 
-  // Final fallback: direct fetch + htmlToText (useful when extractor can't parse).
   if (!text || !text.trim()) {
     const res = await fetch(url, {
       headers: headers(),

@@ -1,13 +1,12 @@
 import 'dotenv/config';
 import { publishOriginalArticle } from './services/laravelApi.js';
 import { requireEnv } from './utils/env.js';
+import type { OriginalArticlePayload } from './types/index.js';
 
-// Sample articles to seed the database for testing
-const sampleArticles = [
+const sampleArticles: OriginalArticlePayload[] = [
 	{
 		type: 'original',
 		title: 'How AI is Transforming Customer Support',
-		slug: 'ai-transforming-customer-support',
 		content: `<h1>How AI is Transforming Customer Support</h1>
 <p>Artificial Intelligence is revolutionizing the way businesses interact with their customers. From chatbots to predictive analytics, AI is enabling companies to provide faster, more personalized support.</p>
 
@@ -26,12 +25,10 @@ const sampleArticles = [
 <h2>The Future of AI in Customer Support</h2>
 <p>As AI technology continues to evolve, we can expect even more sophisticated applications in customer support, including emotion detection, multilingual support, and predictive issue resolution.</p>`,
 		source_url: 'https://beyondchats.com/blogs/ai-transforming-customer-support',
-		published_at: null,
 	},
 	{
 		type: 'original',
 		title: 'Best Practices for Live Chat Support',
-		slug: 'best-practices-live-chat-support',
 		content: `<h1>Best Practices for Live Chat Support</h1>
 <p>Live chat has become one of the most popular customer service channels. Here are the best practices to ensure your live chat support is effective.</p>
 
@@ -50,12 +47,10 @@ const sampleArticles = [
 <h2>5. Follow Up</h2>
 <p>After resolving an issue, follow up with customers to ensure they're satisfied with the solution. This shows you care about their experience.</p>`,
 		source_url: 'https://beyondchats.com/blogs/best-practices-live-chat-support',
-		published_at: null,
 	},
 	{
 		type: 'original',
 		title: 'Understanding Customer Service Metrics',
-		slug: 'understanding-customer-service-metrics',
 		content: `<h1>Understanding Customer Service Metrics</h1>
 <p>Measuring the right metrics is crucial for improving customer service. Here are the key metrics every support team should track.</p>
 
@@ -77,11 +72,10 @@ const sampleArticles = [
 <h2>Conclusion</h2>
 <p>By tracking these metrics, you can identify areas for improvement and ensure your customer service team is performing at its best.</p>`,
 		source_url: 'https://beyondchats.com/blogs/understanding-customer-service-metrics',
-		published_at: null,
 	},
 ];
 
-async function main() {
+async function main(): Promise<void> {
 	requireEnv('API_BASE_URL');
 
 	console.log('Seeding sample articles into backend...');
@@ -97,7 +91,7 @@ async function main() {
 		} catch (err) {
 			failed += 1;
 			console.error(`✗ Failed: ${article.title}`);
-			console.error(`  Error: ${err?.message ?? err}`);
+			console.error(`  Error: ${(err as any)?.message ?? err}`);
 		}
 	}
 

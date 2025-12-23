@@ -3,15 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "run-once": "node src/run-once.js",
-    "seed-originals": "node src/seed-originals.js",
-    "seed-local": "node src/seed-local.js",
-    "run-mock": "node src/run-mock.js"
+    "build": "tsc",
+    "run-once": "tsx src/run-once.ts",
+    "seed-originals": "tsx src/seed-originals.ts",
+    "seed-local": "tsx src/seed-local.ts",
+    "run-mock": "tsx src/run-mock.ts"
   },
   "dependencies": {
     "@extractus/article-extractor": "^8.0.4",
     "dotenv": "^16.4.5",
     "html-to-text": "^9.0.5",
     "marked": "^16.4.2"
+  },
+  "devDependencies": {
+    "@types/html-to-text": "^9.0.4",
+    "@types/marked": "^5.0.2",
+    "@types/node": "^25.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

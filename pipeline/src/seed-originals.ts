@@ -3,8 +3,9 @@ import 'dotenv/config';
 import { extractMainArticle } from './services/scrape.js';
 import { publishOriginalArticle } from './services/laravelApi.js';
 import { requireEnv } from './utils/env.js';
+import type { Article } from './types/index.js';
 
-function parseCountFromArgs() {
+function parseCountFromArgs(): number {
 	const idx = process.argv.findIndex((a) => a === '--count');
 	if (idx >= 0) {
 		const raw = process.argv[idx + 1];
@@ -18,12 +19,12 @@ function parseCountFromArgs() {
 	return 5;
 }
 
-function parseResetFromEnv() {
+function parseResetFromEnv(): boolean {
 	const raw = String(process.env.RESET_SEED ?? 'false').trim().toLowerCase();
 	return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'y';
 }
 
-async function fetchHtml(url) {
+async function fetchHtml(url: string): Promise<string> {
 	const res = await fetch(url, {
 		headers: {
 			'User-Agent': 'BeyondChatsAssignmentSeeder/1.0 (+https://beyondchats.com)',
@@ -35,7 +36,7 @@ async function fetchHtml(url) {
 	return await res.text();
 }
 
-function toAbsoluteUrl(baseUrl, href) {
+function toAbsoluteUrl(baseUrl: string, href: string): string | null {
 	if (!href) return null;
 	if (href.startsWith('http://') || href.startsWith('https://')) return href;
 
@@ -43,15 +44,14 @@ function toAbsoluteUrl(baseUrl, href) {
 	if (href.startsWith('//')) return `${base.protocol}${href}`;
 	if (href.startsWith('/')) return `${base.protocol}//${base.host}${href}`;
 
-	// relative
 	const baseDir = base.pathname.endsWith('/') ? base.pathname : base.pathname.replace(/\/[^/]*$/, '/');
 	return `${base.protocol}//${base.host}${baseDir}${href}`;
 }
 
-function discoverLastPageUrl(baseUrl, listingHtml) {
+function discoverLastPageUrl(baseUrl: string, listingHtml: string): string {
 	const hrefs = Array.from(listingHtml.matchAll(/href=["']([^"']+)["']/g)).map((m) => m[1]);
 
-	let bestHref = null;
+	let bestHref: string | null = null;
 	let maxPage = 1;
 	for (const href of hrefs) {
 		const absolute = toAbsoluteUrl(baseUrl, href);
@@ -76,9 +76,9 @@ function discoverLastPageUrl(baseUrl, listingHtml) {
 	return bestHref.replace(/(\/page\/)\d+(\/)?/, `$1${maxPage}$2`);
 }
 
-function extractArticleUrls(pageUrl, html) {
+function extractArticleUrls(pageUrl: string, html: string): string[] {
 	const hrefs = Array.from(html.matchAll(/href=["']([^"']+)["']/g)).map((m) => m[1]);
-	const urls = [];
+	const urls: string[] = [];
 
 	for (const href of hrefs) {
 		if (!href || href === '#' || href.startsWith('javascript:')) continue;
@@ -98,21 +98,20 @@ function extractArticleUrls(pageUrl, html) {
 	return Array.from(new Set(urls));
 }
 
-function isLikelyBlogPostUrl(url) {
+function isLikelyBlogPostUrl(url: string): boolean {
 	try {
 		const u = new URL(url);
 		const parts = u.pathname.split('/').filter(Boolean);
-		// Accept only: /blogs/<slug>/
 		return parts[0] === 'blogs' && parts.length === 2;
 	} catch {
 		return false;
 	}
 }
 
-async function fetchExistingOriginalSourceUrls() {
+async function fetchExistingOriginalSourceUrls(): Promise<Set<string>> {
 	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
 
-	const existing = new Set();
+	const existing = new Set<string>();
 	const perPage = 100;
 	const maxPages = 200;
 
@@ -127,7 +126,7 @@ async function fetchExistingOriginalSourceUrls() {
 			throw new Error(`Failed to list existing originals (page=${page}). HTTP ${res.status}`);
 		}
 
-		const json = await res.json();
+		const json: any = await res.json();
 		const data = Array.isArray(json?.data) ? json.data : [];
 		for (const a of data) {
 			if (a?.source_url) existing.add(a.source_url);
@@ -143,10 +142,10 @@ async function fetchExistingOriginalSourceUrls() {
 	return existing;
 }
 
-async function listArticlesByType(type) {
+async function listArticlesByType(type: string): Promise<Article[]> {
 	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
 
-	const results = [];
+	const results: Article[] = [];
 	const perPage = 100;
 	const maxPages = 200;
 
@@ -162,7 +161,7 @@ async function listArticlesByType(type) {
 			throw new Error(`Failed to list articles (type=${type}, page=${page}). HTTP ${res.status}`);
 		}
 
-		const json = await res.json();
+		const json: any = await res.json();
 		const data = Array.isArray(json?.data) ? json.data : [];
 		for (const a of data) {
 			if (a?.id) results.push(a);
@@ -178,19 +177,18 @@ async function listArticlesByType(type) {
 	return results;
 }
 
-async function deleteArticleById(id) {
+async function deleteArticleById(id: number): Promise<void> {
 	const base = requireEnv('API_BASE_URL').replace(/\/$/, '');
 	const res = await fetch(`${base}/api/articles/${id}`, {
 		method: 'DELETE',
 		headers: { Accept: 'application/json' },
 	});
-	// 204 expected. Treat 404 as already deleted.
 	if (res.status === 204 || res.status === 404) return;
 	const body = await res.text().catch(() => '');
 	throw new Error(`Failed to delete article id=${id}. HTTP ${res.status}: ${body}`);
 }
 
-async function resetAllArticles() {
+async function resetAllArticles(): Promise<void> {
 	console.log('RESET_SEED=true: deleting existing updated + original articles...');
 
 	const updated = await listArticlesByType('updated');
@@ -206,17 +204,7 @@ async function resetAllArticles() {
 	console.log(`Deleted originals: ${originals.length}`);
 }
 
-function slugFromUrl(url) {
-	try {
-		const u = new URL(url);
-		const parts = u.pathname.split('/').filter(Boolean);
-		return parts[parts.length - 1] ?? null;
-	} catch {
-		return null;
-	}
-}
-
-async function main() {
+async function main(): Promise<void> {
 	requireEnv('API_BASE_URL');
 	const count = Math.max(1, Math.min(20, parseCountFromArgs()));
 	const reset = parseResetFromEnv();
@@ -241,7 +229,7 @@ async function main() {
 	}
 
 	console.log(`Found ${articleUrls.length} URLs. Seeding into backend...`);
-	const existing = reset ? new Set() : await fetchExistingOriginalSourceUrls();
+	const existing = reset ? new Set<string>() : await fetchExistingOriginalSourceUrls();
 
 	let ok = 0;
 	let failed = 0;
@@ -254,27 +242,24 @@ async function main() {
 
 			const extracted = await extractMainArticle(url);
 			const payload = {
-				type: 'original',
+				type: 'original' as const,
 				title: extracted.title ?? url,
-				slug: slugFromUrl(url),
 				content: extracted.html || extracted.text || url,
 				source_url: url,
-				published_at: null,
 			};
 
 			const created = await publishOriginalArticle(payload);
 			ok += 1;
 			console.log(`Seeded: id=${created.id} title=${created.title}`);
 		} catch (err) {
-			// If the backend says it's a conflict, treat it as a skip to keep runs idempotent.
-			if (err?.status === 409) {
+			if ((err as any)?.status === 409) {
 				console.log(`Skip (conflict/exists): ${url}`);
 				continue;
 			}
 
 			failed += 1;
 			console.error(`Failed: ${url}`);
-			console.error(err?.message ?? err);
+			console.error((err as any)?.message ?? err);
 		}
 	}
 
