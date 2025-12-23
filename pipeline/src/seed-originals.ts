@@ -81,7 +81,7 @@ function extractArticleUrls(pageUrl: string, html: string): string[] {
 	const urls: string[] = [];
 
 	for (const href of hrefs) {
-		if (!href || href === '#' || href.startsWith('javascript:')) continue;
+		if (!href || href === '#' || href.startsWith('javascript:') || href.startsWith('data:') || href.startsWith('vbscript:')) continue;
 
 		const absolute = toAbsoluteUrl(pageUrl, href);
 		if (!absolute) continue;

@@ -16,7 +16,7 @@ interface LLMRequestParams {
   user: string;
 }
 
-async function rewriteWithOpenAi({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: null; markdown: string }> {
+async function rewriteWithOpenAi({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: string | null; markdown: string }> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -69,7 +69,7 @@ async function rewriteWithOpenAi({ apiKey, model, system, user }: LLMRequestPara
   return { title: null, markdown };
 }
 
-async function rewriteWithGemini({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: null; markdown: string }> {
+async function rewriteWithGemini({ apiKey, model, system, user }: LLMRequestParams): Promise<{ title: string | null; markdown: string }> {
   const normalizedModel = String(model || '').startsWith('models/')
     ? String(model).slice('models/'.length)
     : String(model || '');
@@ -202,7 +202,7 @@ similar in quality to top Google results.
 Do not copy wording or structure.
 Output markdown only.`;
 
-  let result: { title: null; markdown: string };
+  let result: { title: string | null; markdown: string };
 
   if (provider === 'gemini') {
     result = await rewriteWithGemini({ apiKey, model, system, user });
